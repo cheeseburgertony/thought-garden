@@ -20,12 +20,16 @@ import {
 import { Command } from "cmdk";
 import {
   ArrowDownToLine,
-  ArrowUpFromLine,
   Check,
+  ChevronDown,
   Command as CommandIcon,
   Expand,
+  FileInput,
+  FileJson,
+  FileOutput,
   Focus,
   Hand,
+  ImageDown,
   Leaf,
   Link2,
   Moon,
@@ -85,6 +89,7 @@ function CanvasWorkspace() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const exportMenuRef = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
     const saved = loadCanvas();
@@ -287,6 +292,34 @@ function CanvasWorkspace() {
     const state = useCanvasStore.getState();
     downloadCanvas({ nodes: state.nodes, edges: state.edges, viewport: state.viewport });
     toast.success("画布已导出");
+  }, []);
+  const exportImage = useCallback(async () => {
+    const flowElement = canvasRef.current?.querySelector<HTMLElement>(".react-flow");
+    if (!flowElement) return;
+
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(flowElement, {
+        backgroundColor: getComputedStyle(flowElement).backgroundColor,
+        cacheBust: true,
+        pixelRatio: 2,
+        filter: (element) => ![
+          "react-flow__controls",
+          "react-flow__attribution",
+          "react-flow__handle",
+          "node-toolbar",
+        ].some((className) => element.classList?.contains(className)),
+      });
+      const link = document.createElement("a");
+      link.download = "thought-garden.png";
+      link.href = dataUrl;
+      link.click();
+      toast.success("画布图片已导出");
+    } catch (error) {
+      console.error("[thought-garden] Could not export canvas image", error);
+      toast.error("图片导出失败，请重试。");
+    }
+    exportMenuRef.current?.removeAttribute("open");
   }, []);
 
   const clearCanvas = useCallback(() => {
@@ -499,8 +532,20 @@ function CanvasWorkspace() {
             <button className="icon-button" onClick={redo} title="重做 ⌘⇧Z" aria-label="重做"><Redo2 size={16} /></button>
             <span className="toolbar-divider" />
             <button className="icon-button" onClick={fitCanvas} title="适应画布" aria-label="适应画布"><Focus size={16} /></button>
-            <button className="icon-button" onClick={exportFile} title="导出 JSON" aria-label="导出"><ArrowUpFromLine size={16} /></button>
-            <button className="icon-button" onClick={() => importRef.current?.click()} title="导入 JSON" aria-label="导入"><ArrowDownToLine size={16} /></button>
+            <details className="export-menu-wrap" ref={exportMenuRef}>
+              <summary className="export-menu-trigger" aria-label="导出画布">
+                <FileOutput size={15} /><span>导出</span><ChevronDown size={12} />
+              </summary>
+              <div className="export-menu" role="menu" aria-label="导出格式">
+                <button className="export-menu-item" role="menuitem" onClick={() => { exportFile(); exportMenuRef.current?.removeAttribute("open"); }}>
+                  <FileJson size={16} /><span>JSON 文件<small>备份或恢复画布</small></span>
+                </button>
+                <button className="export-menu-item" role="menuitem" onClick={() => { void exportImage(); }}>
+                  <ImageDown size={16} /><span>PNG 图片<small>下载当前视图</small></span>
+                </button>
+              </div>
+            </details>
+            <button className="file-action" onClick={() => importRef.current?.click()} title="导入 JSON 文件" aria-label="导入"><FileInput size={15} /><span>导入</span></button>
             <span className="toolbar-divider" />
             <button className="icon-button theme-toggle" onClick={() => useCanvasStore.getState().setTheme(theme === "light" ? "dark" : "light")} title="切换主题" aria-label="切换主题">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
           </div>
@@ -524,8 +569,8 @@ function CanvasWorkspace() {
                 <Command.Item onSelect={() => executeCommand("new")}><Plus size={15} />新建想法<span>⌘ N</span></Command.Item>
                 <Command.Item onSelect={() => executeCommand("fit")}><Focus size={15} />适应画布<span>F</span></Command.Item>
                 <Command.Item onSelect={() => executeCommand("delete")}><X size={15} />删除选中节点<span>⌫</span></Command.Item>
-                <Command.Item onSelect={() => executeCommand("export")}><ArrowUpFromLine size={15} />导出画布</Command.Item>
-                <Command.Item onSelect={() => executeCommand("import")}><ArrowDownToLine size={15} />导入画布</Command.Item>
+                <Command.Item onSelect={() => executeCommand("export")}><FileOutput size={15} />导出 JSON</Command.Item>
+                <Command.Item onSelect={() => executeCommand("import")}><FileInput size={15} />导入 JSON</Command.Item>
                 <Command.Item onSelect={() => executeCommand("clear")}><X size={15} />清空画布</Command.Item>
               </Command.Group>
               <Command.Group heading="AI 思考">

@@ -116,6 +116,16 @@ button { color: inherit; }
 .icon-button { display: grid; width: 31px; height: 31px; place-items: center; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; transition: background .15s ease, color .15s ease; }
 .icon-button:hover { background: var(--accent-wash); color: var(--accent-deep); }
 .topbar-actions .toolbar-divider { margin: 0 4px; }
+.file-action, .export-menu-trigger { display: flex; height: 31px; align-items: center; justify-content: center; gap: 5px; padding: 0 7px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; transition: background .15s ease, color .15s ease; }
+.file-action:hover, .export-menu-trigger:hover, .export-menu-wrap[open] > .export-menu-trigger { background: var(--accent-wash); color: var(--accent-deep); }
+.export-menu-wrap { position: relative; display: flex; }
+.export-menu-trigger { list-style: none; }
+.export-menu-trigger::-webkit-details-marker { display: none; }
+.export-menu { position: absolute; z-index: 8; top: calc(100% + 8px); right: 0; min-width: 174px; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-solid); box-shadow: var(--shadow); }
+.export-menu-item { display: flex; width: 100%; align-items: center; gap: 9px; padding: 8px; border: 0; border-radius: 7px; background: transparent; color: var(--text); cursor: pointer; text-align: left; font-size: 10px; }
+.export-menu-item:hover { background: var(--accent-wash); }
+.export-menu-item > span { display: grid; gap: 3px; }
+.export-menu-item small { color: var(--subtle); font-size: 9px; }
 
 .empty-state { position: absolute; z-index: 1; top: 50%; left: 50%; display: flex; width: min(410px, calc(100vw - 40px)); align-items: center; flex-direction: column; transform: translate(-50%, -51%); pointer-events: none; text-align: center; }
 .empty-orbit { position: relative; display: grid; width: 56px; height: 56px; place-items: center; margin-bottom: 23px; border: 1px solid var(--line); border-radius: 19px; background: var(--surface); color: var(--accent); box-shadow: 0 8px 25px rgba(45, 55, 47, .045); }
@@ -198,6 +208,7 @@ button { color: inherit; }
   .topbar-actions { height: 40px; padding: 0 3px; }
   .icon-button { width: 28px; height: 28px; }
   .topbar-actions .toolbar-divider { margin: 0 2px; }
+  .file-action, .export-menu-trigger { height: 28px; gap: 3px; padding: 0 4px; font-size: 9px; }
   .empty-state { top: 48%; }
   .empty-state h1 { font-size: 27px; }
   .examples { margin-top: 24px; }
