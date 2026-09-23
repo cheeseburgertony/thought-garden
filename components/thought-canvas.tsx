@@ -209,6 +209,7 @@ function CanvasWorkspace() {
   const flowEdges = useMemo(() => edges.map((edge) => (
     edge.type === "smoothstep" ? { ...edge, type: "default" } : edge
   )), [edges]);
+  const hasSelection = nodes.some((node) => node.selected) || edges.some((edge) => edge.selected);
   const handleNodeDrag = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
     const currentNodes = useCanvasStore.getState().nodes;
     const aligned = alignThoughtNode(node, currentNodes, flow.getViewport().zoom);
@@ -375,6 +376,8 @@ function CanvasWorkspace() {
           nodesDraggable={toolMode === "select"}
           nodesConnectable={toolMode !== "hand"}
           elementsSelectable={toolMode !== "hand"}
+          zoomOnScroll={toolMode !== "hand" && hasSelection}
+          panOnScroll={toolMode === "hand" || !hasSelection}
           onNodesChange={(changes: NodeChange<ThoughtNode>[]) => useCanvasStore.getState().setNodes(applyNodeChanges(changes, useCanvasStore.getState().nodes))}
           onEdgesChange={(changes: EdgeChange[]) => useCanvasStore.getState().setEdges(applyEdgeChanges(changes, useCanvasStore.getState().edges))}
           onConnect={(connection: Connection) => {
