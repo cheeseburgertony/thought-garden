@@ -22,6 +22,8 @@ import { Command } from "cmdk";
 import {
   ArrowDownToLine,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Command as CommandIcon,
   Expand,
   FileInput,
@@ -32,6 +34,7 @@ import {
   ImageDown,
   Leaf,
   Link2,
+  MessageCircleQuestion,
   Moon,
   MousePointer2,
   Plus,
@@ -53,7 +56,7 @@ import { alignThoughtNode, arrangeThoughtNodes, fanOutPositions } from "@/lib/ca
 import { getHiddenNodeIds } from "@/lib/canvas-graph";
 import { downloadCanvas, loadCanvas, saveCanvas } from "@/lib/persistence";
 import { CanvasFileSchema, ExpandResponseSchema } from "@/lib/schemas";
-import type { ThoughtAction, ThoughtNode } from "@/lib/types";
+import { actionLabels, type ThoughtAction, type ThoughtNode } from "@/lib/types";
 import ThoughtNodeView from "@/components/thought-node";
 import { useCanvasStore } from "@/store/canvas-store";
 
@@ -74,6 +77,13 @@ const canvasTools = [
   { mode: "hand", label: "抓手", icon: Hand },
   { mode: "connect", label: "连线", icon: Link2 },
 ] as const;
+const thoughtGuides: { action: ThoughtAction; icon: typeof Sparkles; description: string }[] = [
+  { action: "expand", icon: Sparkles, description: "围绕当前想法发散，生成相关方向和子问题。" },
+  { action: "deep", icon: MessageCircleQuestion, description: "追问原因、前提和细节，把模糊想法挖具体。" },
+  { action: "challenge", icon: Swords, description: "寻找反例和假设漏洞，检查想法是否站得住。" },
+  { action: "risk", icon: ShieldAlert, description: "识别实施阻碍、失败方式和潜在代价。" },
+  { action: "perspective", icon: Sparkles, description: "切换用户、团队或反对者视角重新审视。" },
+];
 
 function CanvasBackground() {
   const { zoom } = useViewport();
@@ -94,6 +104,7 @@ function CanvasWorkspace() {
   const [search, setSearch] = useState("");
   const [running, setRunning] = useState<string | null>(null);
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
+  const [guideOpen, setGuideOpen] = useState(false);
   const [spacePanActive, setSpacePanActive] = useState(false);
   const [alignmentGuides, setAlignmentGuides] = useState<{ horizontal?: AlignmentGuideStyle; vertical?: AlignmentGuideStyle }>({});
   const activeToolMode = spacePanActive ? "hand" : toolMode;
@@ -563,6 +574,34 @@ function CanvasWorkspace() {
             {spacePanActive ? <>临时抓手 <span className="hint-dot">·</span> 拖动画布平移 <span className="hint-dot">·</span> 松开空格恢复工具</> : toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白框选 <span className="hint-dot">·</span> <kbd>Shift</kbd> 多选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
           </div>
         </ReactFlow>
+
+        <aside className={`guide-sidebar${guideOpen ? " is-open" : ""} nopan nodrag`} aria-label="使用指南">
+          {guideOpen ? (
+            <section className="guide-panel" id="thought-guide-panel" aria-labelledby="thought-guide-title">
+              <header className="guide-panel-header">
+                <div className="guide-panel-heading">
+                  <span className="guide-panel-mark"><Leaf size={15} /></span>
+                  <div><strong id="thought-guide-title">使用指南</strong><span>让想法从不同方向生长</span></div>
+                </div>
+                <button type="button" className="guide-toggle is-close" onClick={() => setGuideOpen(false)} aria-label="收起使用指南" aria-expanded={true} title="收起使用指南">
+                  <ChevronLeft size={17} />
+                </button>
+              </header>
+              <div className="guide-list">
+                {thoughtGuides.map(({ action, icon: Icon, description }) => (
+                  <article className="guide-item" key={action}>
+                    <div className="guide-label"><Icon size={14} /><strong>{actionLabels[action]}</strong></div>
+                    <p>{description}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : (
+            <button type="button" className="guide-toggle is-open" onClick={() => setGuideOpen(true)} aria-label="展开使用指南" aria-expanded={false} title="使用指南">
+              <ChevronRight size={18} />
+            </button>
+          )}
+        </aside>
 
         {alignmentGuides.vertical && <div className="alignment-guide is-vertical" style={alignmentGuides.vertical} />}
         {alignmentGuides.horizontal && <div className="alignment-guide is-horizontal" style={alignmentGuides.horizontal} />}
