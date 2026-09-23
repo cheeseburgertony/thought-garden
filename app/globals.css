@@ -54,9 +54,6 @@ button { color: inherit; }
 .react-flow__pane:active { cursor: grabbing; }
 .react-flow__node-thought { cursor: grab; }
 .react-flow__node.dragging .thought-node { cursor: grabbing; }
-.canvas-viewport[data-tool="hand"] .react-flow__node-thought { cursor: grab; }
-.canvas-viewport[data-tool="connect"] .react-flow__pane { cursor: crosshair; }
-.canvas-viewport[data-tool="connect"] .thought-node { cursor: default; }
 .react-flow__controls { overflow: hidden; border: 1px solid var(--line) !important; border-radius: 11px !important; background: var(--surface) !important; box-shadow: 0 4px 15px rgba(30, 40, 31, .06) !important; }
 .react-flow__controls-button { width: 31px !important; height: 31px !important; border-bottom: 1px solid var(--line) !important; background: transparent !important; fill: var(--muted) !important; }
 .react-flow__controls-button:last-child { border: 0 !important; }
@@ -90,7 +87,6 @@ button { color: inherit; }
 .mini-spinner { width: 11px; height: 11px; border: 1px solid var(--line-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 .thought-node .react-flow__handle { visibility: hidden; width: 10px; height: 10px; border: 2px solid var(--surface-solid); border-radius: 50%; background: var(--node-accent); opacity: 0; box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent) 20%, transparent); cursor: crosshair; transition: opacity .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease; }
 .thought-node:hover .react-flow__handle { visibility: visible; opacity: .88; }
-.canvas-viewport[data-tool="connect"] .thought-node .react-flow__handle { visibility: visible; opacity: 1; }
 .thought-node .react-flow__handle:hover { background: var(--accent-deep); box-shadow: 0 0 0 4px var(--accent-wash); }
 
 @media (hover: none) {
