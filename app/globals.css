@@ -86,6 +86,7 @@ button { color: inherit; }
 .thought-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .thought-kind { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; font-weight: 550; line-height: 1; letter-spacing: .035em; }
 .thought-kind svg { width: 21px; height: 21px; padding: 4px; border-radius: 7px; background: var(--node-tint); color: var(--node-accent); }
+.thought-kind > span { padding: 4px 7px; border-radius: 999px; background: var(--node-tint); color: color-mix(in srgb, var(--node-accent) 68%, var(--text)); }
 .thought-text { margin-top: 11px; color: var(--text); font-size: 14px; font-weight: 500; line-height: 1.58; letter-spacing: -.012em; white-space: pre-wrap; overflow-wrap: anywhere; }
 .thought-editor { display: block; width: 100%; min-height: 54px; margin-top: 9px; padding: 0; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 14px; line-height: 1.58; }
 .thought-footer { display: flex; min-height: 16px; justify-content: flex-end; align-items: center; gap: 7px; margin-top: 8px; color: var(--subtle); font-size: 9px; }

@@ -22,6 +22,14 @@ const kindIcons = {
   challenge: Swords,
 };
 
+const kindLabels = {
+  idea: "想法",
+  question: "问题",
+  insight: "洞察",
+  risk: "风险",
+  challenge: "挑战",
+} satisfies Record<ThoughtNodeData["kind"], string>;
+
 export default function ThoughtNodeView({ id, data, selected }: { id: string; data: ThoughtNodeData; selected?: boolean }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(data.text);
@@ -31,6 +39,7 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
   const toggleBranch = useCanvasStore((state) => state.toggleBranch);
   const childCount = useCanvasStore((state) => state.edges.reduce((count, edge) => count + (edge.source === id && edge.target !== id ? 1 : 0), 0));
   const Icon = kindIcons[data.kind];
+  const kindLabel = data.depth === 0 && data.kind === "idea" ? "起点" : kindLabels[data.kind];
 
   function finishEdit(save: boolean) {
     if (save && draft.trim() && draft.trim() !== data.text) updateThought(id, draft.trim());
@@ -70,7 +79,7 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
       >
         <Handle type="target" position={Position.Top} />
         <div className="thought-header">
-          <div className="thought-kind"><Icon size={13} strokeWidth={1.8} /><span>{data.createdBy === "ai" ? "AI 思绪" : data.depth === 0 ? "起点" : "思绪"}</span></div>
+          <div className="thought-kind"><Icon size={13} strokeWidth={1.8} /><span>{kindLabel}</span></div>
           {childCount > 0 && (
             <button
               type="button"
