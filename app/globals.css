@@ -72,8 +72,7 @@ button { color: inherit; }
 .react-flow__node-thought { width: 254px; overflow: visible; border: 0; background: transparent; }
 .react-flow__node-thought.selected { box-shadow: none !important; }
 
-.thought-node { --node-accent: var(--accent); --node-tint: var(--accent-wash); position: relative; min-height: 105px; padding: 15px 17px 12px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-solid); box-shadow: 0 3px 12px rgba(40, 48, 40, .055), 0 1px 3px rgba(40, 48, 40, .035); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; animation: node-arrive .2s ease-out both; }
-.thought-node::before { position: absolute; top: 13px; bottom: 13px; left: 0; width: 3px; border-radius: 0 3px 3px 0; background: var(--node-accent); content: ""; opacity: .82; }
+.thought-node { --node-accent: var(--accent); --node-tint: var(--accent-wash); position: relative; min-height: 105px; padding: 15px 17px 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-solid); box-shadow: 0 3px 12px rgba(40, 48, 40, .055), 0 1px 3px rgba(40, 48, 40, .035); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; animation: node-arrive .2s ease-out both; }
 .thought-node:hover { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: 0 11px 27px rgba(40, 48, 40, .09), 0 2px 7px rgba(40, 48, 40, .045); }
 .thought-node.is-selected { border-color: rgba(83, 133, 109, .72); box-shadow: 0 0 0 3px rgba(83, 133, 109, .12), 0 10px 25px rgba(40, 48, 40, .075); }
 .thought-node.kind-risk { --node-accent: #b68762; --node-tint: rgba(182, 135, 98, .12); }
