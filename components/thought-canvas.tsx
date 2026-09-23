@@ -86,7 +86,9 @@ function CanvasWorkspace() {
   const [search, setSearch] = useState("");
   const [running, setRunning] = useState<string | null>(null);
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
+  const [spacePanActive, setSpacePanActive] = useState(false);
   const [alignmentGuides, setAlignmentGuides] = useState<{ horizontal?: AlignmentGuideStyle; vertical?: AlignmentGuideStyle }>({});
+  const activeToolMode = spacePanActive ? "hand" : toolMode;
   const canvasRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -433,6 +435,12 @@ function CanvasWorkspace() {
         target.matches("input, textarea, [contenteditable=true]") || target.isContentEditable
       );
       const mod = event.metaKey || event.ctrlKey;
+      const interactive = target instanceof HTMLElement && target.closest("button, a, [role=button]");
+      if (event.code === "Space" && !event.repeat && !typing && !interactive && !isCommandOpen && !isSearchOpen && !mod && !event.altKey) {
+        event.preventDefault();
+        setSpacePanActive(true);
+        return;
+      }
       if (mod && event.key.toLowerCase() === "k") {
         event.preventDefault(); setSearchOpen(false); setCommandOpen((open) => !open); return;
       }
@@ -461,8 +469,20 @@ function CanvasWorkspace() {
         useCanvasStore.getState().removeSelection();
       }
     }
+    function onKeyUp(event: KeyboardEvent) {
+      if (event.code === "Space") setSpacePanActive(false);
+    }
+    function onBlur() {
+      setSpacePanActive(false);
+    }
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
+    };
   }, [isCommandOpen, isSearchOpen, openDraftAtCenter, redo, undo]);
 
   if (!hydrated) return <main className="app-loading" aria-label="正在打开思维花园"><span className="brand-mark"><Leaf size={19} /></span></main>;
@@ -471,20 +491,20 @@ function CanvasWorkspace() {
     <main className="app-shell">
       <div
         className="canvas-viewport"
-        data-tool={toolMode}
+        data-tool={activeToolMode}
         ref={canvasRef}
-        onDoubleClick={(event) => { if (toolMode === "select") openDraftAtPanePoint(event); }}
+        onDoubleClick={(event) => { if (activeToolMode === "select") openDraftAtPanePoint(event); }}
       >
         <ReactFlow
           nodes={flowNodes}
           edges={flowEdges}
           nodeTypes={nodeTypes}
           defaultViewport={viewport}
-          nodesDraggable={toolMode === "select"}
-          nodesConnectable={toolMode !== "hand"}
-          elementsSelectable={toolMode !== "hand"}
-          zoomOnScroll={toolMode !== "hand" && hasSelection}
-          panOnScroll={toolMode === "hand" || !hasSelection}
+          nodesDraggable={activeToolMode === "select"}
+          nodesConnectable={activeToolMode !== "hand"}
+          elementsSelectable={activeToolMode !== "hand"}
+          zoomOnScroll={activeToolMode !== "hand" && hasSelection}
+          panOnScroll={activeToolMode === "hand" || !hasSelection}
           onNodesChange={(changes: NodeChange<ThoughtNode>[]) => useCanvasStore.getState().setNodes(applyNodeChanges(changes, useCanvasStore.getState().nodes))}
           onEdgesChange={(changes: EdgeChange[]) => useCanvasStore.getState().setEdges(applyEdgeChanges(changes, useCanvasStore.getState().edges))}
           onConnect={(connection: Connection) => {
@@ -495,12 +515,12 @@ function CanvasWorkspace() {
           onNodeDrag={handleNodeDrag}
           onNodeDragStop={handleNodeDragStop}
           onMoveEnd={(_, nextViewport) => useCanvasStore.getState().setViewport(nextViewport)}
-          panOnDrag={toolMode === "hand"}
-          panActivationKeyCode={toolMode === "connect" ? null : "Space"}
-          selectionOnDrag={toolMode === "select"}
+          panOnDrag={activeToolMode === "hand"}
+          panActivationKeyCode={null}
+          selectionOnDrag={activeToolMode === "select"}
           selectionMode={SelectionMode.Partial}
           multiSelectionKeyCode="Shift"
-          selectionKeyCode={toolMode === "select" ? "Shift" : null}
+          selectionKeyCode={activeToolMode === "select" ? "Shift" : null}
           deleteKeyCode={null}
           connectionLineType={ConnectionLineType.Bezier}
           connectionLineStyle={{ stroke: "var(--accent)", strokeWidth: 2, strokeDasharray: "4 5" }}
@@ -512,7 +532,7 @@ function CanvasWorkspace() {
           <Background variant={BackgroundVariant.Dots} gap={25} size={1} color="var(--dot)" />
           <Controls showInteractive={false} position="bottom-right" />
           <div className="canvas-hint">
-            {toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白框选 <span className="hint-dot">·</span> <kbd>Shift</kbd> 多选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
+            {spacePanActive ? <>临时抓手 <span className="hint-dot">·</span> 拖动画布平移 <span className="hint-dot">·</span> 松开空格恢复工具</> : toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白框选 <span className="hint-dot">·</span> <kbd>Shift</kbd> 多选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
           </div>
         </ReactFlow>
 
@@ -524,9 +544,9 @@ function CanvasWorkspace() {
             <button
               key={mode}
               type="button"
-              className={`canvas-tool${toolMode === mode ? " is-active" : ""}`}
+              className={`canvas-tool${activeToolMode === mode ? " is-active" : ""}`}
               aria-label={`${label}工具，快捷键 ${shortcut}`}
-              aria-pressed={toolMode === mode}
+              aria-pressed={activeToolMode === mode}
               title={`${label}工具 · ${shortcut}`}
               onClick={() => { setToolMode(mode); setAlignmentGuides({}); }}
             >
