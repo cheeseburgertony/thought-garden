@@ -34,6 +34,12 @@ const kindLabels = {
   challenge: "挑战",
 } satisfies Record<ThoughtNodeData["kind"], string>;
 
+function resizeEditor(element: HTMLTextAreaElement | null) {
+  if (!element) return;
+  element.style.height = "auto";
+  element.style.height = `${element.scrollHeight}px`;
+}
+
 export default function ThoughtNodeView({ id, data, selected }: { id: string; data: ThoughtNodeData; selected?: boolean }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(data.text);
@@ -116,9 +122,11 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
         {editing ? (
           <textarea
             autoFocus
+            ref={resizeEditor}
+            rows={1}
             className="thought-editor nodrag nowheel"
             value={draft}
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => { resizeEditor(event.currentTarget); setDraft(event.currentTarget.value); }}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); finishEdit(true); }
               if (event.key === "Escape") { event.preventDefault(); finishEdit(false); }
