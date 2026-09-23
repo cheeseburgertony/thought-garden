@@ -263,6 +263,17 @@ function CanvasWorkspace() {
       )));
     }
   }, [flow]);
+  const handleNodeDragStop = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
+    setAlignmentGuides({});
+    const currentNodes = useCanvasStore.getState().nodes;
+    const aligned = alignThoughtNode(node, currentNodes, flow.getViewport().zoom);
+
+    if (aligned.position.x !== node.position.x || aligned.position.y !== node.position.y) {
+      useCanvasStore.getState().setNodes(currentNodes.map((item) => (
+        item.id === node.id ? { ...item, position: aligned.position } : item
+      )));
+    }
+  }, [flow]);
 
   const openDraftAtPanePoint = useCallback((event: ReactMouseEvent) => {
     const target = event.target;
@@ -443,7 +454,7 @@ function CanvasWorkspace() {
           }}
           onNodeDragStart={() => useCanvasStore.getState().checkpoint()}
           onNodeDrag={handleNodeDrag}
-          onNodeDragStop={() => setAlignmentGuides({})}
+          onNodeDragStop={handleNodeDragStop}
           onMoveEnd={(_, nextViewport) => useCanvasStore.getState().setViewport(nextViewport)}
           panOnDrag={toolMode === "hand"}
           selectionOnDrag={toolMode === "select"}
