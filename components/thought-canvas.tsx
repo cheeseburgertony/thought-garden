@@ -10,6 +10,7 @@ import {
   Controls,
   ReactFlow,
   ReactFlowProvider,
+  SelectionMode,
   useReactFlow,
   type Connection,
   type EdgeChange,
@@ -36,6 +37,7 @@ import {
   Sparkles,
   Sun,
   Swords,
+  Trash2,
   Undo2,
   X,
 } from "lucide-react";
@@ -209,7 +211,8 @@ function CanvasWorkspace() {
   const flowEdges = useMemo(() => edges.map((edge) => (
     edge.type === "smoothstep" ? { ...edge, type: "default" } : edge
   )), [edges]);
-  const hasSelection = nodes.some((node) => node.selected) || edges.some((edge) => edge.selected);
+  const selectedNodeCount = nodes.filter((node) => node.selected).length;
+  const hasSelection = selectedNodeCount > 0 || edges.some((edge) => edge.selected);
   const handleNodeDrag = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
     const currentNodes = useCanvasStore.getState().nodes;
     const aligned = alignThoughtNode(node, currentNodes, flow.getViewport().zoom);
@@ -310,7 +313,7 @@ function CanvasWorkspace() {
       case "deep": { const node = getSelectedNode(); if (node) void runAction(node.id, "deep"); break; }
       case "challenge": { const node = getSelectedNode(); if (node) void runAction(node.id, "challenge"); break; }
       case "risk": { const node = getSelectedNode(); if (node) void runAction(node.id, "risk"); break; }
-      case "delete": useCanvasStore.getState().removeThoughts(useCanvasStore.getState().nodes.filter((node) => node.selected).map((node) => node.id)); break;
+      case "delete": useCanvasStore.getState().removeSelection(); break;
       case "export": exportFile(); break;
       case "import": importRef.current?.click(); break;
       case "clear": clearCanvas(); break;
@@ -349,9 +352,8 @@ function CanvasWorkspace() {
         if (tool === "c") { setToolMode("connect"); return; }
       }
       if (event.key === "Delete" || event.key === "Backspace") {
-        const state = useCanvasStore.getState();
-        state.removeThoughts(state.nodes.filter((node) => node.selected).map((node) => node.id));
-        state.removeEdges(state.edges.filter((edge) => edge.selected).map((edge) => edge.id));
+        event.preventDefault();
+        useCanvasStore.getState().removeSelection();
       }
     }
     window.addEventListener("keydown", onKeyDown);
@@ -388,8 +390,9 @@ function CanvasWorkspace() {
           onNodeDrag={handleNodeDrag}
           onNodeDragStop={() => setAlignmentGuides({})}
           onMoveEnd={(_, nextViewport) => useCanvasStore.getState().setViewport(nextViewport)}
-          panOnDrag={toolMode !== "connect"}
-          selectionOnDrag={false}
+          panOnDrag={toolMode === "hand"}
+          selectionOnDrag={toolMode === "select"}
+          selectionMode={SelectionMode.Partial}
           multiSelectionKeyCode="Shift"
           selectionKeyCode={toolMode === "select" ? "Shift" : null}
           deleteKeyCode={null}
@@ -423,6 +426,21 @@ function CanvasWorkspace() {
               <kbd>{shortcut}</kbd>
             </button>
           ))}
+          {selectedNodeCount > 0 && (
+            <>
+              <span className="toolbar-divider" />
+              <button
+                type="button"
+                className="canvas-tool is-danger"
+                aria-label={`删除 ${selectedNodeCount} 个选中节点`}
+                title={`删除 ${selectedNodeCount} 个选中节点 · Delete`}
+                onClick={() => useCanvasStore.getState().removeSelection()}
+              >
+                <Trash2 size={15} strokeWidth={1.8} />
+                <span>删除 {selectedNodeCount}</span>
+              </button>
+            </>
+          )}
         </div>
 
         {nodes.length === 0 && !draft && (
@@ -466,7 +484,9 @@ function CanvasWorkspace() {
           </div>
         </header>
 
-        <div className="canvas-hint"><span className="hint-key">N</span><span>新想法</span><span className="hint-dot">·</span><span>拖空白平移</span><span className="hint-dot">·</span><span>拖动圆点连线</span><span className="hint-dot">·</span><span>双击空白处</span></div>
+        <div className="canvas-hint">
+          {toolMode === "select" ? <>拖空白框选 <span className="hint-dot">·</span> <kbd>Delete</kbd> 删除所选 <span className="hint-dot">·</span> <kbd>N</kbd> 新想法</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指滚动平移 <span className="hint-dot">·</span> 捏合缩放</> : <>拖动圆点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回选择</>}
+        </div>
         <div className="canvas-status"><span className="save-dot" />保存在此设备</div>
       </div>
 

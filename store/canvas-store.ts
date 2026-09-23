@@ -15,8 +15,8 @@ type CanvasState = CanvasSnapshot & {
   addThoughts: (nodes: ThoughtNode[], edges: CanvasEdge[]) => void;
   updateThought: (id: string, text: string) => void;
   removeThoughts: (ids: string[]) => void;
+  removeSelection: () => void;
   connect: (edge: CanvasEdge) => void;
-  removeEdges: (ids: string[]) => void;
   importCanvas: (snapshot: CanvasSnapshot) => void;
   clearCanvas: () => void;
   undo: () => void;
@@ -67,17 +67,24 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
         edges: state.edges.filter(({ source, target }) => !remove.has(source) && !remove.has(target)),
       }));
     },
+    removeSelection: () => {
+      const state = get();
+      const selectedNodes = new Set(state.nodes.filter((node) => node.selected).map(({ id }) => id));
+      const removedEdges = new Set(state.edges.filter((edge) =>
+        edge.selected || selectedNodes.has(edge.source) || selectedNodes.has(edge.target),
+      ).map(({ id }) => id));
+      if (!selectedNodes.size && !removedEdges.size) return;
+      checkpoint();
+      set({
+        nodes: state.nodes.filter(({ id }) => !selectedNodes.has(id)),
+        edges: state.edges.filter(({ id }) => !removedEdges.has(id)),
+      });
+    },
     connect: (edge) => {
       const { edges } = get();
       if (edges.some((item) => item.source === edge.source && item.target === edge.target)) return;
       checkpoint();
       set({ edges: [...edges, edge] });
-    },
-    removeEdges: (ids) => {
-      if (!ids.length) return;
-      checkpoint();
-      const remove = new Set(ids);
-      set((state) => ({ edges: state.edges.filter(({ id }) => !remove.has(id)) }));
     },
     importCanvas: (next) => {
       checkpoint();

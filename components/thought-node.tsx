@@ -45,7 +45,7 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
 
   return (
     <>
-      <NodeToolbar isVisible={selected} position={Position.Top} offset={12} className="node-toolbar">
+      <NodeToolbar position={Position.Top} offset={12} className="node-toolbar">
         {actionButtons.map(({ action, icon: ActionIcon }) => (
           <button key={action} className="node-action" onClick={() => data.onAction?.(id, action)} title={actionLabels[action]}>
             <ActionIcon size={14} strokeWidth={1.8} />
