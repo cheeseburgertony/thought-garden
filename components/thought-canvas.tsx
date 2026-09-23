@@ -103,6 +103,29 @@ function CanvasWorkspace() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
 
+  const toggleTheme = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    const nextTheme = theme === "light" ? "dark" : "light";
+    const root = document.documentElement;
+    const applyTheme = () => {
+      root.dataset.theme = nextTheme;
+      useCanvasStore.getState().setTheme(nextTheme);
+    };
+
+    if (!document.startViewTransition || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      applyTheme();
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    root.style.setProperty("--theme-reveal-x", `${x}px`);
+    root.style.setProperty("--theme-reveal-y", `${y}px`);
+    root.style.setProperty("--theme-reveal-radius", `${radius}px`);
+    document.startViewTransition(applyTheme);
+  };
+
   useEffect(() => {
     if (!hydrated) return;
     let timer: ReturnType<typeof setTimeout>;
@@ -592,7 +615,7 @@ function CanvasWorkspace() {
             </details>
             <button className="icon-button file-action" onClick={() => importRef.current?.click()} title="导入 JSON 文件" aria-label="导入"><FileInput size={15} /></button>
             <span className="toolbar-divider" />
-            <button className="icon-button theme-toggle" onClick={() => useCanvasStore.getState().setTheme(theme === "light" ? "dark" : "light")} title="切换主题" aria-label="切换主题">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
+            <button className="icon-button theme-toggle" onClick={toggleTheme} title="切换主题" aria-label="切换主题">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
           </div>
         </header>
 
