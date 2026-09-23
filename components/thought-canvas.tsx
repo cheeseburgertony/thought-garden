@@ -28,9 +28,12 @@ import {
   FileJson,
   FileOutput,
   Focus,
+  Hand,
   ImageDown,
   Leaf,
+  Link2,
   Moon,
+  MousePointer2,
   Plus,
   Redo2,
   Search,
@@ -63,6 +66,13 @@ const examples = [
 ];
 
 type Draft = { x: number; y: number; position: { x: number; y: number } };
+type CanvasTool = "select" | "hand" | "connect";
+
+const canvasTools = [
+  { mode: "select", label: "操作", shortcut: "V", icon: MousePointer2 },
+  { mode: "hand", label: "抓手", shortcut: "H", icon: Hand },
+  { mode: "connect", label: "连线", shortcut: "C", icon: Link2 },
+] as const;
 
 function CanvasWorkspace() {
   const flow = useReactFlow<ThoughtNode>();
@@ -76,6 +86,7 @@ function CanvasWorkspace() {
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [running, setRunning] = useState<string | null>(null);
+  const [toolMode, setToolMode] = useState<CanvasTool>("select");
   const [alignmentGuides, setAlignmentGuides] = useState<{ horizontal?: AlignmentGuideStyle; vertical?: AlignmentGuideStyle }>({});
   const canvasRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
@@ -417,6 +428,12 @@ function CanvasWorkspace() {
       }
       if (mod && event.key.toLowerCase() === "y") { event.preventDefault(); redo(); return; }
       if (event.key.toLowerCase() === "n") { event.preventDefault(); openDraftAtCenter(); return; }
+      if (!mod && !event.altKey) {
+        const tool = event.key.toLowerCase();
+        if (tool === "v") { setToolMode("select"); return; }
+        if (tool === "h") { setToolMode("hand"); return; }
+        if (tool === "c") { setToolMode("connect"); return; }
+      }
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         useCanvasStore.getState().removeSelection();
@@ -432,19 +449,20 @@ function CanvasWorkspace() {
     <main className="app-shell">
       <div
         className="canvas-viewport"
+        data-tool={toolMode}
         ref={canvasRef}
-        onDoubleClick={openDraftAtPanePoint}
+        onDoubleClick={(event) => { if (toolMode === "select") openDraftAtPanePoint(event); }}
       >
         <ReactFlow
           nodes={flowNodes}
           edges={flowEdges}
           nodeTypes={nodeTypes}
           defaultViewport={viewport}
-          nodesDraggable
-          nodesConnectable
-          elementsSelectable
-          zoomOnScroll={hasSelection}
-          panOnScroll={!hasSelection}
+          nodesDraggable={toolMode === "select"}
+          nodesConnectable={toolMode !== "hand"}
+          elementsSelectable={toolMode !== "hand"}
+          zoomOnScroll={toolMode !== "hand" && hasSelection}
+          panOnScroll={toolMode === "hand" || !hasSelection}
           onNodesChange={(changes: NodeChange<ThoughtNode>[]) => useCanvasStore.getState().setNodes(applyNodeChanges(changes, useCanvasStore.getState().nodes))}
           onEdgesChange={(changes: EdgeChange[]) => useCanvasStore.getState().setEdges(applyEdgeChanges(changes, useCanvasStore.getState().edges))}
           onConnect={(connection: Connection) => {
@@ -455,12 +473,12 @@ function CanvasWorkspace() {
           onNodeDrag={handleNodeDrag}
           onNodeDragStop={handleNodeDragStop}
           onMoveEnd={(_, nextViewport) => useCanvasStore.getState().setViewport(nextViewport)}
-          panOnDrag
-          panActivationKeyCode="Space"
+          panOnDrag={toolMode !== "connect"}
+          panActivationKeyCode={toolMode === "connect" ? null : "Space"}
           selectionOnDrag={false}
           selectionMode={SelectionMode.Partial}
           multiSelectionKeyCode="Shift"
-          selectionKeyCode="Shift"
+          selectionKeyCode={toolMode === "select" ? "Shift" : null}
           deleteKeyCode={null}
           connectionLineType={ConnectionLineType.Bezier}
           connectionLineStyle={{ stroke: "var(--accent)", strokeWidth: 2, strokeDasharray: "4 5" }}
@@ -477,6 +495,22 @@ function CanvasWorkspace() {
         {alignmentGuides.horizontal && <div className="alignment-guide is-horizontal" style={alignmentGuides.horizontal} />}
 
         <div className="canvas-toolbar" role="toolbar" aria-label="画布工具">
+          {canvasTools.map(({ mode, label, shortcut, icon: Icon }) => (
+            <button
+              key={mode}
+              type="button"
+              className={`canvas-tool${toolMode === mode ? " is-active" : ""}`}
+              aria-label={`${label}工具，快捷键 ${shortcut}`}
+              aria-pressed={toolMode === mode}
+              title={`${label}工具 · ${shortcut}`}
+              onClick={() => { setToolMode(mode); setAlignmentGuides({}); }}
+            >
+              <Icon size={16} strokeWidth={1.8} />
+              <span>{label}</span>
+              <kbd>{shortcut}</kbd>
+            </button>
+          ))}
+          <span className="toolbar-divider" />
           <button
             type="button"
             className="canvas-tool"
@@ -559,7 +593,7 @@ function CanvasWorkspace() {
         </header>
 
         <div className="canvas-hint">
-          拖节点移动 <span className="hint-dot">·</span> 拖空白平移 <span className="hint-dot">·</span> <kbd>Shift</kbd> 框选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手
+          {toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白平移 <span className="hint-dot">·</span> <kbd>Shift</kbd> 框选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
         </div>
         <div className="canvas-status"><span className="save-dot" />保存在此设备</div>
       </div>
