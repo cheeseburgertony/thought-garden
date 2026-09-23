@@ -52,6 +52,7 @@ import ThoughtNodeView from "@/components/thought-node";
 import { useCanvasStore } from "@/store/canvas-store";
 
 const nodeTypes = { thought: ThoughtNodeView };
+type AlignmentGuideStyle = { left: number; top: number; width?: number; height?: number };
 const examples = [
   "我想做一个 AI 产品",
   "未来三年我应该提升什么能力？",
@@ -80,7 +81,7 @@ function CanvasWorkspace() {
   const [search, setSearch] = useState("");
   const [running, setRunning] = useState<string | null>(null);
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
-  const [alignmentGuides, setAlignmentGuides] = useState<{ horizontal?: number; vertical?: number }>({});
+  const [alignmentGuides, setAlignmentGuides] = useState<{ horizontal?: AlignmentGuideStyle; vertical?: AlignmentGuideStyle }>({});
   const canvasRef = useRef<HTMLDivElement>(null);
   const draftRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -219,15 +220,36 @@ function CanvasWorkspace() {
     const bounds = canvasRef.current?.getBoundingClientRect();
 
     if (bounds) {
-      const vertical = aligned.guides.vertical === undefined ? undefined : flow.flowToScreenPosition({
-        x: aligned.guides.vertical,
-        y: node.position.y,
-      }).x - bounds.left;
-      const horizontal = aligned.guides.horizontal === undefined ? undefined : flow.flowToScreenPosition({
-        x: node.position.x,
-        y: aligned.guides.horizontal,
-      }).y - bounds.top;
-      setAlignmentGuides({ vertical, horizontal });
+      const horizontalStart = aligned.guides.horizontal && flow.flowToScreenPosition({
+        x: aligned.guides.horizontal.start,
+        y: aligned.guides.horizontal.coordinate,
+      });
+      const horizontalEnd = aligned.guides.horizontal && flow.flowToScreenPosition({
+        x: aligned.guides.horizontal.end,
+        y: aligned.guides.horizontal.coordinate,
+      });
+      const verticalStart = aligned.guides.vertical && flow.flowToScreenPosition({
+        x: aligned.guides.vertical.coordinate,
+        y: aligned.guides.vertical.start,
+      });
+      const verticalEnd = aligned.guides.vertical && flow.flowToScreenPosition({
+        x: aligned.guides.vertical.coordinate,
+        y: aligned.guides.vertical.end,
+      });
+      setAlignmentGuides({
+        horizontal: horizontalStart && horizontalEnd ? {
+          left: horizontalStart.x - bounds.left,
+          top: horizontalStart.y - bounds.top,
+          width: horizontalEnd.x - horizontalStart.x,
+        } : undefined,
+        vertical: verticalStart && verticalEnd ? {
+          left: verticalStart.x - bounds.left,
+          top: verticalStart.y - bounds.top,
+          height: verticalEnd.y - verticalStart.y,
+        } : undefined,
+      });
+    } else {
+      setAlignmentGuides({});
     }
 
     if (aligned.position.x !== node.position.x || aligned.position.y !== node.position.y) {
@@ -407,8 +429,8 @@ function CanvasWorkspace() {
           <Controls showInteractive={false} position="bottom-right" />
         </ReactFlow>
 
-        {alignmentGuides.vertical !== undefined && <div className="alignment-guide is-vertical" style={{ left: alignmentGuides.vertical }} />}
-        {alignmentGuides.horizontal !== undefined && <div className="alignment-guide is-horizontal" style={{ top: alignmentGuides.horizontal }} />}
+        {alignmentGuides.vertical && <div className="alignment-guide is-vertical" style={alignmentGuides.vertical} />}
+        {alignmentGuides.horizontal && <div className="alignment-guide is-horizontal" style={alignmentGuides.horizontal} />}
 
         <div className="canvas-toolbar" role="toolbar" aria-label="画布工具">
           {canvasTools.map(({ mode, label, shortcut, icon: Icon }) => (

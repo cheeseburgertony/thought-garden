@@ -146,9 +146,9 @@ button { color: inherit; }
 .canvas-tool.is-danger { color: #b36e66; }
 .canvas-tool.is-danger:hover { background: rgba(179, 110, 102, .09); color: #a35a52; }
 .canvas-tool kbd { min-width: 17px; height: 17px; background: rgba(255, 255, 255, .5); }
-.alignment-guide { position: absolute; z-index: 2; pointer-events: none; background: var(--accent); opacity: .72; box-shadow: 0 0 5px rgba(83, 133, 109, .32); }
-.alignment-guide.is-vertical { top: 0; bottom: 0; width: 1px; }
-.alignment-guide.is-horizontal { right: 0; left: 0; height: 1px; }
+.alignment-guide { position: absolute; z-index: 2; pointer-events: none; opacity: .9; }
+.alignment-guide.is-vertical { width: 0; border-left: 1px dashed var(--accent); }
+.alignment-guide.is-horizontal { height: 0; border-top: 1px dashed var(--accent); }
 .hint-key, kbd { display: inline-grid; min-width: 17px; height: 17px; place-items: center; padding: 0 4px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--muted); font: inherit; font-size: 9px; }
 .hint-dot { color: var(--line-strong); }
 .canvas-status { position: absolute; z-index: 3; bottom: 20px; left: 22px; display: flex; align-items: center; gap: 7px; color: var(--subtle); font-size: 10px; pointer-events: none; }
