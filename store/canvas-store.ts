@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { CanvasEdge, CanvasSnapshot, ThoughtNode } from "@/lib/types";
+import type { CanvasEdge, CanvasSnapshot, CanvasSummary, ThoughtNode } from "@/lib/types";
 import { getDescendantIds } from "@/lib/canvas-graph";
 import type { Viewport } from "@xyflow/react";
 
@@ -11,6 +11,7 @@ type CanvasState = CanvasSnapshot & {
   setEdges: (edges: CanvasEdge[]) => void;
   setViewport: (viewport: Viewport) => void;
   setTheme: (theme: "light" | "dark") => void;
+  setSummary: (summary: CanvasSummary | null) => void;
   checkpoint: () => void;
   addThought: (node: ThoughtNode, edge?: CanvasEdge) => void;
   addThoughts: (nodes: ThoughtNode[], edges: CanvasEdge[]) => void;
@@ -25,15 +26,15 @@ type CanvasState = CanvasSnapshot & {
   redo: () => void;
 };
 
-const emptySnapshot = (): CanvasSnapshot => ({ nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1.1 } });
+const emptySnapshot = (): CanvasSnapshot => ({ nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1.1 }, summary: null });
 
 export const useCanvasStore = create<CanvasState>((set, get) => {
   const snapshot = (): CanvasSnapshot => {
-    const { nodes, edges, viewport } = get();
-    return { nodes, edges, viewport };
+    const { nodes, edges, viewport, summary } = get();
+    return { nodes, edges, viewport, summary };
   };
   const checkpoint = () => set((state) => ({
-    undoStack: [...state.undoStack.slice(-49), { nodes: state.nodes, edges: state.edges, viewport: state.viewport }],
+    undoStack: [...state.undoStack.slice(-49), { nodes: state.nodes, edges: state.edges, viewport: state.viewport, summary: state.summary }],
     redoStack: [],
   }));
 
@@ -46,6 +47,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     setEdges: (edges) => set({ edges }),
     setViewport: (viewport) => set({ viewport }),
     setTheme: (theme) => set({ theme }),
+    setSummary: (summary) => {
+      checkpoint();
+      set({ summary });
+    },
     checkpoint,
     addThought: (node, edge) => {
       checkpoint();

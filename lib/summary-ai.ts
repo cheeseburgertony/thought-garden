@@ -1,0 +1,55 @@
+import "server-only";
+import { SummarizeRequestSchema, SummarizeResponseSchema } from "@/lib/schemas";
+import { DEEPSEEK_MODEL } from "@/lib/ai";
+
+const systemPrompt = `你是一个帮助用户收束思路的助手。用户提供的是一张思维画布中的想法和它们之间的连接。
+
+请严格依据给出的内容整理，不要添加画布里没有的事实。返回严格 JSON 对象，格式为：
+{"conclusion":"当前可以得出的阶段性结论","openQuestions":["仍待确认的问题"],"nextAction":"下一步最小且可执行的行动","sourceNodeIds":["支撑结论或行动的想法 ID"]}
+
+结论应简洁、具体，并体现画布中已经形成的判断；若证据不足，明确保留不确定性。待确认问题可为空，最多 5 条。下一步行动只给一件可以开始做的小事。引用 1–8 个实际提供的想法 ID；不要编造 ID。只输出 JSON，不要 Markdown。`;
+
+export async function summarizeThoughts(input: unknown) {
+  const request = SummarizeRequestSchema.parse(input);
+
+  if (process.env.NEXT_PUBLIC_AI_MOCK === "true") {
+    const first = request.nodes.find((node) => node.depth === 0) ?? request.nodes[0];
+    return SummarizeResponseSchema.parse({
+      conclusion: `当前思考围绕「${first.text.slice(0, 48)}」展开，接下来可以先验证最关键的假设。`,
+      openQuestions: ["什么证据能说明这个方向值得继续？"],
+      nextAction: "找一位相关的人聊 15 分钟，确认这个问题是否真实且重要。",
+      sourceNodeIds: [first.id],
+    });
+  }
+
+  const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
+  if (!apiKey) throw new Error("DEEPSEEK_API_KEY is required when mock mode is disabled");
+
+  const baseUrl = (process.env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com").replace(/\/+$/, "");
+  const response = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: DEEPSEEK_MODEL,
+      temperature: 0.4,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: JSON.stringify(request) },
+      ],
+    }),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!response.ok) throw new Error(`AI provider returned ${response.status}`);
+  const payload: unknown = await response.json();
+  const content = (payload as { choices?: { message?: { content?: unknown } }[] })
+    .choices?.[0]?.message?.content;
+  if (typeof content !== "string") throw new Error("AI provider returned no message content");
+
+  const result = SummarizeResponseSchema.parse(JSON.parse(content));
+  const includedIds = new Set(request.nodes.map((node) => node.id));
+  const sourceNodeIds = result.sourceNodeIds.filter((id) => includedIds.has(id));
+  if (!sourceNodeIds.length) throw new Error("AI provider returned no valid source references");
+  return { ...result, sourceNodeIds };
+}

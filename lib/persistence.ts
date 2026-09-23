@@ -1,5 +1,5 @@
 import { CanvasFileSchema } from "@/lib/schemas";
-import type { CanvasEdge, CanvasSnapshot, ThoughtNode } from "@/lib/types";
+import type { CanvasEdge, CanvasSnapshot, CanvasSummary, ThoughtNode } from "@/lib/types";
 
 const STORAGE_KEY = "thought-garden-canvas-v1";
 
@@ -16,6 +16,7 @@ export function loadCanvas(): (CanvasSnapshot & { theme: "light" | "dark" }) | n
       nodes: result.data.nodes.map((node) => ({ ...node, type: "thought" })) as ThoughtNode[],
       edges: result.data.edges as CanvasEdge[],
       viewport: result.data.viewport,
+      summary: (result.data.summary as CanvasSummary | null | undefined) ?? null,
       theme: result.data.theme ?? "light",
     };
   } catch (error) {
@@ -46,6 +47,7 @@ export function saveCanvas(snapshot: CanvasSnapshot, theme: "light" | "dark"): v
       id, source, target, sourceHandle, targetHandle, type,
     })),
     viewport: snapshot.viewport,
+    summary: snapshot.summary,
     theme,
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(file));
@@ -67,7 +69,7 @@ export function downloadCanvas(snapshot: CanvasSnapshot): void {
       collapsed: data.collapsed,
     },
   }));
-  const blob = new Blob([JSON.stringify({ version: 1, nodes, edges: snapshot.edges, viewport: snapshot.viewport }, null, 2)], {
+  const blob = new Blob([JSON.stringify({ version: 1, nodes, edges: snapshot.edges, viewport: snapshot.viewport, summary: snapshot.summary }, null, 2)], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);

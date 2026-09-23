@@ -34,6 +34,7 @@ import {
   Hand,
   ImageDown,
   Leaf,
+  ListChecks,
   Link2,
   MessageCircleQuestion,
   Moon,
@@ -57,7 +58,8 @@ import { alignThoughtNode, arrangeThoughtNodes, fanOutPositions } from "@/lib/ca
 import { getHiddenNodeIds } from "@/lib/canvas-graph";
 import { downloadCanvas, loadCanvas, saveCanvas } from "@/lib/persistence";
 import { CanvasFileSchema, ExpandResponseSchema } from "@/lib/schemas";
-import { actionLabels, type ThoughtAction, type ThoughtNode } from "@/lib/types";
+import { actionLabels, type CanvasSummary, type ThoughtAction, type ThoughtNode } from "@/lib/types";
+import CanvasSummaryDialog from "@/components/canvas-summary-dialog";
 import ThoughtNodeView from "@/components/thought-node";
 import { useCanvasStore } from "@/store/canvas-store";
 
@@ -98,10 +100,12 @@ function CanvasWorkspace() {
   const edges = useCanvasStore((state) => state.edges);
   const viewport = useCanvasStore((state) => state.viewport);
   const theme = useCanvasStore((state) => state.theme);
+  const summary = useCanvasStore((state) => state.summary);
   const [hydrated, setHydrated] = useState(false);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [isCommandOpen, setCommandOpen] = useState(false);
   const [isSearchOpen, setSearchOpen] = useState(false);
+  const [isSummaryOpen, setSummaryOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [running, setRunning] = useState<string | null>(null);
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
@@ -170,7 +174,7 @@ function CanvasWorkspace() {
       clearTimeout(timer);
       timer = setTimeout(() => {
         try {
-          saveCanvas({ nodes: state.nodes, edges: state.edges, viewport: state.viewport }, state.theme);
+          saveCanvas({ nodes: state.nodes, edges: state.edges, viewport: state.viewport, summary: state.summary }, state.theme);
         } catch (error) {
           console.warn("Could not save Thought Garden canvas", error);
         }
@@ -391,7 +395,7 @@ function CanvasWorkspace() {
   }, [flow]);
   const exportFile = useCallback(() => {
     const state = useCanvasStore.getState();
-    downloadCanvas({ nodes: state.nodes, edges: state.edges, viewport: state.viewport });
+    downloadCanvas({ nodes: state.nodes, edges: state.edges, viewport: state.viewport, summary: state.summary });
     toast.success("画布已导出");
   }, []);
   const exportImage = useCallback(async () => {
@@ -437,6 +441,7 @@ function CanvasWorkspace() {
         nodes: parsed.nodes.map((node) => ({ ...node, type: "thought" as const }) as ThoughtNode),
         edges: parsed.edges,
         viewport: parsed.viewport,
+        summary: parsed.summary ?? null,
       };
       useCanvasStore.getState().importCanvas(next);
       if (parsed.theme) useCanvasStore.getState().setTheme(parsed.theme);
@@ -460,6 +465,43 @@ function CanvasWorkspace() {
     setSearch("");
   }, [flow]);
 
+  const saveSummary = useCallback((nextSummary: CanvasSummary) => {
+    useCanvasStore.getState().setSummary(nextSummary);
+    setSummaryOpen(false);
+    toast.success("整理结果已保存");
+  }, []);
+
+  const focusSummarySource = useCallback((id: string) => {
+    const state = useCanvasStore.getState();
+    const byId = new Map(state.nodes.map((node) => [node.id, node]));
+    const parents = new Map<string, string[]>();
+    for (const edge of state.edges) parents.set(edge.target, [...(parents.get(edge.target) ?? []), edge.source]);
+    for (const node of state.nodes) {
+      if (node.data.parentId) parents.set(node.id, [...(parents.get(node.id) ?? []), node.data.parentId]);
+    }
+    const ancestors = new Set<string>();
+    const pending = [...(parents.get(id) ?? [])];
+    while (pending.length) {
+      const parentId = pending.pop()!;
+      if (ancestors.has(parentId) || !byId.has(parentId)) continue;
+      ancestors.add(parentId);
+      pending.push(...(parents.get(parentId) ?? []));
+    }
+    state.setNodes(state.nodes.map((node) => ({
+      ...node,
+      selected: node.id === id,
+      data: ancestors.has(node.id) && node.data.collapsed ? { ...node.data, collapsed: false } : node.data,
+    })));
+    const node = byId.get(id);
+    if (node) {
+      void flow.setCenter(
+        node.position.x + (node.measured?.width ?? 254) / 2,
+        node.position.y + (node.measured?.height ?? 105) / 2,
+        { zoom: 1.1, duration: 500 },
+      );
+    }
+  }, [flow]);
+
   const executeCommand = useCallback((command: string) => {
     setCommandOpen(false);
     switch (command) {
@@ -470,6 +512,7 @@ function CanvasWorkspace() {
       case "challenge": { const node = getSelectedNode(); if (node) void runAction(node.id, "challenge"); break; }
       case "risk": { const node = getSelectedNode(); if (node) void runAction(node.id, "risk"); break; }
       case "delete": useCanvasStore.getState().removeSelection(); break;
+      case "summary": setSummaryOpen(true); break;
       case "export": exportFile(); break;
       case "import": importRef.current?.click(); break;
       case "clear": clearCanvas(); break;
@@ -485,6 +528,7 @@ function CanvasWorkspace() {
       );
       const mod = event.metaKey || event.ctrlKey;
       const interactive = target instanceof HTMLElement && target.closest("button, a, [role=button]");
+      if (isSummaryOpen) return;
       if (event.code === "Space" && !event.repeat && !typing && !interactive && !isCommandOpen && !isSearchOpen && !mod && !event.altKey) {
         event.preventDefault();
         setSpacePanActive(true);
@@ -532,7 +576,7 @@ function CanvasWorkspace() {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [isCommandOpen, isSearchOpen, openDraftAtCenter, redo, undo]);
+  }, [isCommandOpen, isSearchOpen, isSummaryOpen, openDraftAtCenter, redo, undo]);
 
   if (!hydrated) return <main className="app-loading" aria-label="正在打开思维花园"><span className="brand-mark"><Leaf size={19} /></span></main>;
 
@@ -650,6 +694,17 @@ function CanvasWorkspace() {
             <Workflow size={16} strokeWidth={1.8} />
             <span>整理</span>
           </button>
+          <button
+            type="button"
+            className={`canvas-tool${summary ? " has-summary" : ""}`}
+            aria-label={summary ? "查看思路整理结果" : "整理思路"}
+            title={summary ? "查看思路整理结果" : "从想法中提炼结论和下一步"}
+            disabled={!nodes.length && !summary}
+            onClick={() => setSummaryOpen(true)}
+          >
+            <ListChecks size={16} strokeWidth={1.8} />
+            <span>{summary ? "查看总结" : "思路整理"}</span>
+          </button>
           {selectedNodeCount > 0 && (
             <>
               <span className="toolbar-divider" />
@@ -727,6 +782,17 @@ function CanvasWorkspace() {
 
       <input ref={importRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={(event) => { void importFile(event.target.files?.[0]); event.target.value = ""; }} />
 
+      {isSummaryOpen && (
+        <CanvasSummaryDialog
+          nodes={nodes}
+          edges={edges}
+          savedSummary={summary}
+          onClose={() => setSummaryOpen(false)}
+          onSave={saveSummary}
+          onFocusNode={focusSummarySource}
+        />
+      )}
+
       {isCommandOpen && (
         <div className="dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setCommandOpen(false); }}>
           <Command.Dialog open onOpenChange={setCommandOpen} label="命令菜单" className="command-dialog">
@@ -742,6 +808,7 @@ function CanvasWorkspace() {
                 <Command.Item onSelect={() => executeCommand("clear")}><X size={15} />清空画布</Command.Item>
               </Command.Group>
               <Command.Group heading="AI 思考">
+                <Command.Item onSelect={() => executeCommand("summary")}><ListChecks size={15} />整理思路</Command.Item>
                 <Command.Item onSelect={() => executeCommand("expand")}><Expand size={15} />展开所选想法</Command.Item>
                 <Command.Item onSelect={() => executeCommand("deep")}><Sparkles size={15} />深挖所选想法</Command.Item>
                 <Command.Item onSelect={() => executeCommand("challenge")}><Swords size={15} />反驳所选想法</Command.Item>

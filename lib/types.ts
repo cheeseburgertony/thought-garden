@@ -18,10 +18,19 @@ export type ThoughtNodeData = {
 export type ThoughtNode = Node<ThoughtNodeData, "thought">;
 export type CanvasEdge = Edge;
 
+export type CanvasSummary = {
+  conclusion: string;
+  openQuestions: string[];
+  nextAction: string;
+  sourceNodeIds: string[];
+  updatedAt: string;
+};
+
 export type CanvasSnapshot = {
   nodes: ThoughtNode[];
   edges: CanvasEdge[];
   viewport: Viewport;
+  summary: CanvasSummary | null;
 };
 
 export const actionLabels: Record<ThoughtAction, string> = {
