@@ -27,10 +27,12 @@ export function loadCanvas(): (CanvasSnapshot & { theme: "light" | "dark" }) | n
 export function saveCanvas(snapshot: CanvasSnapshot, theme: "light" | "dark"): void {
   const file = {
     version: 1,
-    nodes: snapshot.nodes.map(({ id, position, data }) => ({
+    nodes: snapshot.nodes.map(({ id, position, sourcePosition, targetPosition, data }) => ({
       id,
       type: "thought" as const,
       position,
+      sourcePosition,
+      targetPosition,
       data: {
         text: data.text,
         kind: data.kind,
@@ -50,10 +52,12 @@ export function saveCanvas(snapshot: CanvasSnapshot, theme: "light" | "dark"): v
 }
 
 export function downloadCanvas(snapshot: CanvasSnapshot): void {
-  const nodes = snapshot.nodes.map(({ id, position, data }) => ({
+  const nodes = snapshot.nodes.map(({ id, position, sourcePosition, targetPosition, data }) => ({
     id,
     type: "thought" as const,
     position,
+    sourcePosition,
+    targetPosition,
     data: {
       text: data.text,
       kind: data.kind,

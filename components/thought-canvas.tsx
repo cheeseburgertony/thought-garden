@@ -8,6 +8,7 @@ import {
   BackgroundVariant,
   ConnectionLineType,
   Controls,
+  Position,
   ReactFlow,
   ReactFlowProvider,
   SelectionMode,
@@ -245,11 +246,14 @@ function CanvasWorkspace() {
         toast.message("这些方向已经长出来了，换个动作继续探索。", { icon: <Leaf size={15} /> });
         return;
       }
-      const points = fanOutPositions(current, fresh.length, currentState.nodes);
+      const direction = current.sourcePosition === Position.Right ? "LR" : "TB";
+      const points = fanOutPositions(current, fresh.length, currentState.nodes, direction);
       const nextNodes: ThoughtNode[] = fresh.map((item, index) => ({
         id: nanoid(),
         type: "thought",
         position: points[index],
+        sourcePosition: direction === "LR" ? Position.Right : Position.Bottom,
+        targetPosition: direction === "LR" ? Position.Left : Position.Top,
         data: {
           text: item.text,
           kind: action === "challenge" ? "challenge" : action === "risk" ? "risk" : item.kind,
@@ -361,9 +365,16 @@ function CanvasWorkspace() {
   const organizeCanvas = useCallback(() => {
     const state = useCanvasStore.getState();
     if (!state.nodes.length) return;
-    const maxRowWidth = Math.max(1100, (canvasRef.current?.clientWidth ?? 1400) / flow.getViewport().zoom);
-    const organized = arrangeThoughtNodes(state.nodes, state.edges, maxRowWidth);
-    if (organized.some((node, index) => node.position.x !== state.nodes[index].position.x || node.position.y !== state.nodes[index].position.y)) {
+    const organized = arrangeThoughtNodes(state.nodes, state.edges, {
+      width: canvasRef.current?.clientWidth ?? window.innerWidth,
+      height: canvasRef.current?.clientHeight ?? window.innerHeight,
+    });
+    if (organized.some((node, index) => (
+      node.position.x !== state.nodes[index].position.x ||
+      node.position.y !== state.nodes[index].position.y ||
+      node.sourcePosition !== state.nodes[index].sourcePosition ||
+      node.targetPosition !== state.nodes[index].targetPosition
+    ))) {
       state.checkpoint();
       state.setNodes(organized);
     }
@@ -423,7 +434,7 @@ function CanvasWorkspace() {
     try {
       const parsed = CanvasFileSchema.parse(JSON.parse(await file.text()));
       const next = {
-        nodes: parsed.nodes.map((node) => ({ ...node, type: "thought" as const })),
+        nodes: parsed.nodes.map((node) => ({ ...node, type: "thought" as const }) as ThoughtNode),
         edges: parsed.edges,
         viewport: parsed.viewport,
       };

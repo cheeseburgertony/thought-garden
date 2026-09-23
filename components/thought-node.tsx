@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Handle, NodeToolbar, Position } from "@xyflow/react";
+import { Handle, NodeToolbar, Position, type NodeProps } from "@xyflow/react";
 import { ChevronDown, ChevronRight, Copy, Ellipsis, Lightbulb, MessageCircleQuestion, ShieldAlert, Sparkles, Swords, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { actionLabels, type ThoughtAction, type ThoughtNodeData } from "@/lib/types";
+import { actionLabels, type ThoughtAction, type ThoughtNode, type ThoughtNodeData } from "@/lib/types";
 import { useCanvasStore } from "@/store/canvas-store";
 
 const actionButtons: { action: ThoughtAction; icon: typeof Sparkles }[] = [
@@ -36,7 +36,7 @@ function resizeEditor(element: HTMLTextAreaElement | null) {
   element.style.height = `${element.scrollHeight}px`;
 }
 
-export default function ThoughtNodeView({ id, data, selected }: { id: string; data: ThoughtNodeData; selected?: boolean }) {
+export default function ThoughtNodeView({ id, data, selected, sourcePosition, targetPosition }: NodeProps<ThoughtNode>) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(data.text);
   const updateThought = useCanvasStore((state) => state.updateThought);
@@ -83,7 +83,7 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
         className={`thought-node${selected ? " is-selected" : ""}${data.kind !== "idea" ? ` kind-${data.kind}` : ""}`}
         onDoubleClick={(event) => { event.stopPropagation(); setDraft(data.text); setEditing(true); }}
       >
-        <Handle type="target" position={Position.Top} />
+        <Handle type="target" position={targetPosition ?? Position.Top} />
         <div className="thought-header">
           <div className="thought-kind"><Icon size={13} strokeWidth={1.8} /><span>{kindLabel}</span></div>
           {childCount > 0 && (
@@ -121,7 +121,7 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
           {data.busy ? <span className="thinking-label"><span className="thinking-dot" />正在思考</span> : data.createdBy === "ai" ? <span>由 AI 生长</span> : null}
           {data.busy && <span className="mini-spinner" aria-hidden="true" />}
         </div>
-        <Handle type="source" position={Position.Bottom} />
+        <Handle type="source" position={sourcePosition ?? Position.Bottom} />
       </div>
     </>
   );

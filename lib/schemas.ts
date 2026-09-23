@@ -7,6 +7,8 @@ export const ThoughtNodeSchema = z.object({
   id: z.string().min(1),
   type: z.literal("thought").optional(),
   position: PointSchema,
+  sourcePosition: z.enum(["left", "right", "top", "bottom"]).optional(),
+  targetPosition: z.enum(["left", "right", "top", "bottom"]).optional(),
   data: z.object({
     text: z.string().min(1).max(1600),
     kind: z.enum(thoughtKinds),
