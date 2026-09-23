@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Handle, NodeToolbar, Position } from "@xyflow/react";
-import { Copy, Ellipsis, Lightbulb, MessageCircleQuestion, ShieldAlert, Sparkles, Swords, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Ellipsis, Lightbulb, MessageCircleQuestion, ShieldAlert, Sparkles, Swords, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { actionLabels, type ThoughtAction, type ThoughtNodeData } from "@/lib/types";
 import { useCanvasStore } from "@/store/canvas-store";
@@ -28,6 +28,8 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
   const updateThought = useCanvasStore((state) => state.updateThought);
   const addThought = useCanvasStore((state) => state.addThought);
   const removeThoughts = useCanvasStore((state) => state.removeThoughts);
+  const toggleBranch = useCanvasStore((state) => state.toggleBranch);
+  const childCount = useCanvasStore((state) => state.edges.reduce((count, edge) => count + (edge.source === id && edge.target !== id ? 1 : 0), 0));
   const Icon = kindIcons[data.kind];
 
   function finishEdit(save: boolean) {
@@ -85,6 +87,21 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
         <div className="thought-footer">
           {data.busy ? <span className="thinking-label"><span className="thinking-dot" />正在思考</span> : data.createdBy === "ai" ? <span>由 AI 生长</span> : null}
           {data.busy && <span className="mini-spinner" aria-hidden="true" />}
+          {childCount > 0 && (
+            <button
+              type="button"
+              className="branch-toggle nodrag nopan"
+              title={data.collapsed ? `展开 ${childCount} 个子节点` : `收起 ${childCount} 个子节点`}
+              aria-label={data.collapsed ? `展开 ${childCount} 个子节点` : `收起 ${childCount} 个子节点`}
+              aria-expanded={!data.collapsed}
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={(event) => { event.stopPropagation(); toggleBranch(id); }}
+            >
+              {data.collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+              <span>{data.collapsed ? "展开" : "收起"}</span>
+              <span className="branch-toggle-count">{childCount}</span>
+            </button>
+          )}
         </div>
         <Handle type="source" position={Position.Bottom} />
       </div>

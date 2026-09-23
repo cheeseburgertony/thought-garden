@@ -10,6 +10,7 @@ export type ThoughtNodeData = {
   depth: number;
   parentId?: string;
   createdBy: "user" | "ai";
+  collapsed?: boolean;
   busy?: boolean;
   onAction?: (id: string, action: ThoughtAction) => void;
 };

@@ -37,6 +37,7 @@ export function saveCanvas(snapshot: CanvasSnapshot, theme: "light" | "dark"): v
         depth: data.depth,
         parentId: data.parentId,
         createdBy: data.createdBy,
+        collapsed: data.collapsed,
       },
     })),
     edges: snapshot.edges.map(({ id, source, target, sourceHandle, targetHandle, type }) => ({
@@ -59,6 +60,7 @@ export function downloadCanvas(snapshot: CanvasSnapshot): void {
       depth: data.depth,
       parentId: data.parentId,
       createdBy: data.createdBy,
+      collapsed: data.collapsed,
     },
   }));
   const blob = new Blob([JSON.stringify({ version: 1, nodes, edges: snapshot.edges, viewport: snapshot.viewport }, null, 2)], {

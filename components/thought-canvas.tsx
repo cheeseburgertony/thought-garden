@@ -49,6 +49,7 @@ import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Toaster, toast } from "sonner";
 import { alignThoughtNode, fanOutPositions } from "@/lib/canvas-layout";
+import { getHiddenNodeIds } from "@/lib/canvas-graph";
 import { downloadCanvas, loadCanvas, saveCanvas } from "@/lib/persistence";
 import { CanvasFileSchema, ExpandResponseSchema } from "@/lib/schemas";
 import type { ThoughtAction, ThoughtNode } from "@/lib/types";
@@ -210,13 +211,17 @@ function CanvasWorkspace() {
     }
   }, [running]);
 
+  const hiddenNodeIds = useMemo(() => getHiddenNodeIds(nodes, edges), [nodes, edges]);
   const flowNodes = useMemo(() => nodes.map((node) => ({
     ...node,
+    hidden: hiddenNodeIds.has(node.id),
     data: { ...node.data, busy: running === node.id, onAction: runAction },
-  })), [nodes, runAction, running]);
-  const flowEdges = useMemo(() => edges.map((edge) => (
-    edge.type === "smoothstep" ? { ...edge, type: "default" } : edge
-  )), [edges]);
+  })), [hiddenNodeIds, nodes, runAction, running]);
+  const flowEdges = useMemo(() => edges.map((edge) => ({
+    ...edge,
+    hidden: hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target),
+    ...(edge.type === "smoothstep" ? { type: "default" } : {}),
+  })), [edges, hiddenNodeIds]);
   const selectedNodeCount = nodes.filter((node) => node.selected).length;
   const hasSelection = selectedNodeCount > 0 || edges.some((edge) => edge.selected);
   const handleNodeDrag = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {

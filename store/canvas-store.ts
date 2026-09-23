@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { CanvasEdge, CanvasSnapshot, ThoughtNode } from "@/lib/types";
+import { getDescendantIds } from "@/lib/canvas-graph";
 import type { Viewport } from "@xyflow/react";
 
 type CanvasState = CanvasSnapshot & {
@@ -17,6 +18,7 @@ type CanvasState = CanvasSnapshot & {
   removeThoughts: (ids: string[]) => void;
   removeSelection: () => void;
   connect: (edge: CanvasEdge) => void;
+  toggleBranch: (id: string) => void;
   importCanvas: (snapshot: CanvasSnapshot) => void;
   clearCanvas: () => void;
   undo: () => void;
@@ -85,6 +87,24 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       if (edges.some((item) => item.source === edge.source && item.target === edge.target)) return;
       checkpoint();
       set({ edges: [...edges, edge] });
+    },
+    toggleBranch: (id) => {
+      const state = get();
+      const node = state.nodes.find((item) => item.id === id);
+      if (!node || !state.edges.some((edge) => edge.source === id && edge.target !== id)) return;
+      const collapsing = !node.data.collapsed;
+      const descendants = collapsing ? getDescendantIds(id, state.edges) : new Set<string>();
+      checkpoint();
+      set({
+        nodes: state.nodes.map((item) => item.id === id
+          ? { ...item, data: { ...item.data, collapsed: collapsing } }
+          : descendants.has(item.id) && item.selected ? { ...item, selected: false } : item),
+        edges: descendants.size
+          ? state.edges.map((edge) => descendants.has(edge.source) || descendants.has(edge.target)
+            ? { ...edge, selected: false }
+            : edge)
+          : state.edges,
+      });
     },
     importCanvas: (next) => {
       checkpoint();

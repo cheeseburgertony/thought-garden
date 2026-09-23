@@ -13,6 +13,7 @@ export const ThoughtNodeSchema = z.object({
     depth: z.number().int().min(0),
     parentId: z.string().optional(),
     createdBy: z.enum(["user", "ai"]),
+    collapsed: z.boolean().optional(),
   }),
 });
 
