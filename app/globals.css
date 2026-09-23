@@ -90,8 +90,8 @@ button { color: inherit; }
 .mini-spinner { width: 11px; height: 11px; border: 1px solid var(--line-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 .thought-node .react-flow__handle { visibility: hidden; width: 10px; height: 10px; border: 2px solid var(--surface-solid); border-radius: 50%; background: var(--node-accent); opacity: 0; box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent) 20%, transparent); cursor: crosshair; transition: opacity .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease; }
 .thought-node:not(.is-selected):hover .react-flow__handle { visibility: visible; opacity: .88; }
-.canvas-viewport[data-tool="connect"] .thought-node .react-flow__handle { visibility: visible; opacity: 1; transform: scale(1.1); }
-.thought-node .react-flow__handle:hover { background: var(--accent-deep); box-shadow: 0 0 0 4px var(--accent-wash); transform: scale(1.2); }
+.canvas-viewport[data-tool="connect"] .thought-node .react-flow__handle { visibility: visible; opacity: 1; }
+.thought-node .react-flow__handle:hover { background: var(--accent-deep); box-shadow: 0 0 0 4px var(--accent-wash); }
 
 .node-toolbar { display: flex; align-items: center; gap: 2px; padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-solid); box-shadow: 0 5px 18px rgba(38, 45, 39, .1); white-space: nowrap; }
 .node-action, .node-more { display: inline-flex; height: 29px; align-items: center; justify-content: center; gap: 5px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; font-size: 11px; transition: background .15s ease, color .15s ease; }
