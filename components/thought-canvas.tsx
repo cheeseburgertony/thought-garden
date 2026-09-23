@@ -12,6 +12,7 @@ import {
   ReactFlowProvider,
   SelectionMode,
   useReactFlow,
+  useViewport,
   type Connection,
   type EdgeChange,
   type NodeChange,
@@ -72,6 +73,12 @@ const canvasTools = [
   { mode: "hand", label: "抓手", shortcut: "H", icon: Hand },
   { mode: "connect", label: "连线", shortcut: "C", icon: Link2 },
 ] as const;
+
+function CanvasBackground() {
+  const { zoom } = useViewport();
+  const scale = Math.max(zoom, 0.2);
+  return <Background variant={BackgroundVariant.Dots} gap={25 / scale} size={1.5 / scale} color="var(--dot)" />;
+}
 
 function CanvasWorkspace() {
   const flow = useReactFlow<ThoughtNode>();
@@ -533,7 +540,7 @@ function CanvasWorkspace() {
           maxZoom={2.2}
           defaultEdgeOptions={{ type: "default", style: { stroke: "var(--edge)", strokeWidth: 1.65 }, interactionWidth: 20 }}
         >
-          <Background variant={BackgroundVariant.Dots} gap={25} size={1} color="var(--dot)" />
+          <CanvasBackground />
           <Controls showInteractive={false} position="bottom-right" />
           <div className="canvas-hint">
             {spacePanActive ? <>临时抓手 <span className="hint-dot">·</span> 拖动画布平移 <span className="hint-dot">·</span> 松开空格恢复工具</> : toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白框选 <span className="hint-dot">·</span> <kbd>Shift</kbd> 多选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
