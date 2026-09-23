@@ -1,10 +1,95 @@
-import type { ThoughtNode } from "@/lib/types";
+import type { CanvasEdge, ThoughtNode } from "@/lib/types";
 
 const NODE_WIDTH = 254;
 const NODE_HEIGHT = 128;
 const CLEARANCE = 38;
 const ALIGNMENT_TOLERANCE = 8;
+const LAYOUT_GAP_X = 76;
+const LAYOUT_GAP_Y = 72;
+const ROOT_GAP = 88;
 type GuideSegment = { coordinate: number; start: number; end: number };
+type LayoutBranch = { id: string; children: LayoutBranch[]; leafCount: number; depth: number; maxDepth: number };
+
+export function arrangeThoughtNodes(nodes: ThoughtNode[], edges: CanvasEdge[], maxRowWidth = 1400): ThoughtNode[] {
+  if (!nodes.length) return nodes;
+
+  const byId = new Map(nodes.map((node) => [node.id, node]));
+  const childrenBySource = new Map<string, string[]>();
+  const incoming = new Set<string>();
+  for (const edge of edges) {
+    if (!byId.has(edge.source) || !byId.has(edge.target)) continue;
+    childrenBySource.set(edge.source, [...(childrenBySource.get(edge.source) ?? []), edge.target]);
+    incoming.add(edge.target);
+  }
+
+  const assigned = new Set<string>();
+  const buildBranch = (id: string): LayoutBranch => {
+    assigned.add(id);
+    const children: LayoutBranch[] = [];
+    for (const childId of childrenBySource.get(id) ?? []) {
+      if (!assigned.has(childId)) children.push(buildBranch(childId));
+    }
+    return { id, children, leafCount: 0, depth: 0, maxDepth: 0 };
+  };
+  const roots: LayoutBranch[] = [];
+  for (const node of nodes) {
+    if (!incoming.has(node.id) && !assigned.has(node.id)) roots.push(buildBranch(node.id));
+  }
+  for (const node of nodes) {
+    if (!assigned.has(node.id)) roots.push(buildBranch(node.id));
+  }
+
+  const levelHeights: number[] = [];
+  const measure = (branch: LayoutBranch, depth: number): number => {
+    branch.depth = depth;
+    levelHeights[depth] = Math.max(levelHeights[depth] ?? 0, byId.get(branch.id)?.measured?.height ?? NODE_HEIGHT);
+    branch.leafCount = branch.children.reduce((count, child) => count + measure(child, depth + 1), 0) || 1;
+    branch.maxDepth = branch.children.reduce((deepest, child) => Math.max(deepest, child.maxDepth), depth);
+    return branch.leafCount;
+  };
+  for (const root of roots) measure(root, 0);
+
+  const levelY: number[] = [];
+  for (let depth = 0; depth < levelHeights.length; depth += 1) {
+    levelY[depth] = depth === 0 ? 0 : levelY[depth - 1] + levelHeights[depth - 1] + LAYOUT_GAP_Y;
+  }
+  const widestNode = Math.max(...nodes.map((node) => node.measured?.width ?? NODE_WIDTH));
+  const columnWidth = widestNode + LAYOUT_GAP_X;
+  const positions = new Map<string, { x: number; y: number }>();
+  const placeBranch = (branch: LayoutBranch, left: number, top: number) => {
+    let childLeft = left;
+    for (const child of branch.children) {
+      placeBranch(child, childLeft, top);
+      childLeft += child.leafCount * columnWidth;
+    }
+    const node = byId.get(branch.id)!;
+    const center = branch.children.length
+      ? left + branch.leafCount * columnWidth / 2
+      : left + columnWidth / 2;
+    positions.set(branch.id, { x: center - (node.measured?.width ?? NODE_WIDTH) / 2, y: top + levelY[branch.depth] });
+  };
+
+  let rowX = 0;
+  let rowY = 0;
+  let rowHeight = 0;
+  for (const root of roots) {
+    const rootWidth = root.leafCount * columnWidth;
+    const rootHeight = levelY[root.maxDepth] + levelHeights[root.maxDepth];
+    if (rowX > 0 && rowX + rootWidth > maxRowWidth) {
+      rowX = 0;
+      rowY += rowHeight + ROOT_GAP;
+      rowHeight = 0;
+    }
+    placeBranch(root, rowX, rowY);
+    rowX += rootWidth + ROOT_GAP;
+    rowHeight = Math.max(rowHeight, rootHeight);
+  }
+
+  return nodes.map((node) => {
+    const position = positions.get(node.id);
+    return position ? { ...node, position } : node;
+  });
+}
 
 export function alignThoughtNode(
   moving: ThoughtNode,

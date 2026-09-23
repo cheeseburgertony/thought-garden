@@ -156,6 +156,7 @@ button { color: inherit; }
 .canvas-tool { display: flex; height: 34px; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
 .canvas-tool:hover { background: var(--accent-wash); color: var(--accent-deep); }
 .canvas-tool.is-active { background: var(--accent-wash); color: var(--accent-deep); box-shadow: inset 0 0 0 1px rgba(83, 133, 109, .12); }
+.canvas-tool:disabled { cursor: not-allowed; opacity: .45; }
 .canvas-tool.is-danger { color: #b36e66; }
 .canvas-tool.is-danger:hover { background: rgba(179, 110, 102, .09); color: #a35a52; }
 .canvas-tool kbd { min-width: 17px; height: 17px; background: rgba(255, 255, 255, .5); }

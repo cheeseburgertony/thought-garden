@@ -43,12 +43,13 @@ import {
   Swords,
   Trash2,
   Undo2,
+  Workflow,
   X,
 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Toaster, toast } from "sonner";
-import { alignThoughtNode, fanOutPositions } from "@/lib/canvas-layout";
+import { alignThoughtNode, arrangeThoughtNodes, fanOutPositions } from "@/lib/canvas-layout";
 import { getHiddenNodeIds } from "@/lib/canvas-graph";
 import { downloadCanvas, loadCanvas, saveCanvas } from "@/lib/persistence";
 import { CanvasFileSchema, ExpandResponseSchema } from "@/lib/schemas";
@@ -295,6 +296,17 @@ function CanvasWorkspace() {
   }, [flow]);
 
   const fitCanvas = useCallback(() => { void flow.fitView({ padding: 0.3, duration: 450 }); }, [flow]);
+  const organizeCanvas = useCallback(() => {
+    const state = useCanvasStore.getState();
+    if (!state.nodes.length) return;
+    const maxRowWidth = Math.max(1100, (canvasRef.current?.clientWidth ?? 1400) / flow.getViewport().zoom);
+    const organized = arrangeThoughtNodes(state.nodes, state.edges, maxRowWidth);
+    if (organized.some((node, index) => node.position.x !== state.nodes[index].position.x || node.position.y !== state.nodes[index].position.y)) {
+      state.checkpoint();
+      state.setNodes(organized);
+    }
+    window.requestAnimationFrame(() => { void flow.fitView({ padding: 0.3, duration: 450 }); });
+  }, [flow]);
   const getSelectedNode = useCallback(() => useCanvasStore.getState().nodes.find((node) => node.selected), []);
   const undo = useCallback(() => {
     useCanvasStore.getState().undo();
@@ -498,6 +510,18 @@ function CanvasWorkspace() {
               <kbd>{shortcut}</kbd>
             </button>
           ))}
+          <span className="toolbar-divider" />
+          <button
+            type="button"
+            className="canvas-tool"
+            aria-label="一键整理画布"
+            title="一键整理节点并适应画布"
+            disabled={!nodes.length}
+            onClick={organizeCanvas}
+          >
+            <Workflow size={16} strokeWidth={1.8} />
+            <span>整理</span>
+          </button>
           {selectedNodeCount > 0 && (
             <>
               <span className="toolbar-divider" />
