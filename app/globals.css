@@ -202,7 +202,6 @@ button { color: inherit; }
 .canvas-tool { display: flex; flex: 0 0 auto; height: 34px; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; white-space: nowrap; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
 .canvas-tool:hover { background: var(--accent-wash); color: var(--accent-deep); }
 .canvas-tool.is-active { background: var(--accent-wash); color: var(--accent-deep); box-shadow: inset 0 0 0 1px rgba(83, 133, 109, .12); }
-.canvas-tool kbd { min-width: 17px; height: 17px; border-color: var(--keycap-border); background: var(--keycap-bg); }
 .canvas-tool:disabled { cursor: not-allowed; opacity: .45; }
 .canvas-tool.is-danger { color: #b36e66; }
 .canvas-tool.is-danger:hover { background: rgba(179, 110, 102, .09); color: #a35a52; }
@@ -266,7 +265,6 @@ button { color: inherit; }
   .canvas-hint { bottom: 65px; gap: 6px; font-size: 9px; }
   .canvas-toolbar { bottom: 9px; gap: 2px; padding: 4px; }
   .canvas-tool { height: 33px; gap: 5px; padding: 0 7px; font-size: 9px; }
-  .canvas-tool kbd { display: none; }
 }
 
 @media (max-width: 360px) {

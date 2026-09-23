@@ -69,9 +69,9 @@ type Draft = { x: number; y: number; position: { x: number; y: number } };
 type CanvasTool = "select" | "hand" | "connect";
 
 const canvasTools = [
-  { mode: "select", label: "操作", shortcut: "V", icon: MousePointer2 },
-  { mode: "hand", label: "抓手", shortcut: "H", icon: Hand },
-  { mode: "connect", label: "连线", shortcut: "C", icon: Link2 },
+  { mode: "select", label: "操作", icon: MousePointer2 },
+  { mode: "hand", label: "抓手", icon: Hand },
+  { mode: "connect", label: "连线", icon: Link2 },
 ] as const;
 
 function CanvasBackground() {
@@ -552,19 +552,18 @@ function CanvasWorkspace() {
         {alignmentGuides.horizontal && <div className="alignment-guide is-horizontal" style={alignmentGuides.horizontal} />}
 
         <div className="canvas-toolbar" role="toolbar" aria-label="画布工具">
-          {canvasTools.map(({ mode, label, shortcut, icon: Icon }) => (
+          {canvasTools.map(({ mode, label, icon: Icon }) => (
             <button
               key={mode}
               type="button"
               className={`canvas-tool${activeToolMode === mode ? " is-active" : ""}`}
-              aria-label={`${label}工具，快捷键 ${shortcut}`}
+              aria-label={`${label}工具`}
               aria-pressed={activeToolMode === mode}
-              title={`${label}工具 · ${shortcut}`}
+              title={`${label}工具`}
               onClick={() => { setToolMode(mode); setAlignmentGuides({}); }}
             >
               <Icon size={16} strokeWidth={1.8} />
               <span>{label}</span>
-              <kbd>{shortcut}</kbd>
             </button>
           ))}
           <span className="toolbar-divider" />
