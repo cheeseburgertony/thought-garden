@@ -242,11 +242,15 @@ function CanvasWorkspace() {
     hidden: hiddenNodeIds.has(node.id),
     data: { ...node.data, busy: running === node.id, onAction: runAction },
   })), [hiddenNodeIds, nodes, runAction, running]);
+  const compactConnections = nodes.length - hiddenNodeIds.size >= 14;
   const flowEdges = useMemo(() => edges.map((edge) => ({
     ...edge,
     hidden: hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target),
     ...(edge.type === "smoothstep" ? { type: "default" } : {}),
-  })), [edges, hiddenNodeIds]);
+    ...(compactConnections ? {
+      style: { ...edge.style, stroke: edge.style?.stroke ?? "var(--edge)", strokeWidth: 1.2, opacity: 0.62 },
+    } : {}),
+  })), [compactConnections, edges, hiddenNodeIds]);
   const selectedNodeCount = nodes.filter((node) => node.selected).length;
   const hasSelection = selectedNodeCount > 0 || edges.some((edge) => edge.selected);
   const handleNodeDrag = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
@@ -329,7 +333,7 @@ function CanvasWorkspace() {
       state.checkpoint();
       state.setNodes(organized);
     }
-    window.requestAnimationFrame(() => { void flow.fitView({ padding: 0.3, duration: 450 }); });
+    window.requestAnimationFrame(() => { void flow.fitView({ padding: 0.18, duration: 450 }); });
   }, [flow]);
   const getSelectedNode = useCallback(() => useCanvasStore.getState().nodes.find((node) => node.selected), []);
   const undo = useCallback(() => {

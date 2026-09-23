@@ -4,9 +4,9 @@ const NODE_WIDTH = 254;
 const NODE_HEIGHT = 128;
 const CLEARANCE = 38;
 const ALIGNMENT_TOLERANCE = 8;
-const LAYOUT_GAP_X = 76;
-const LAYOUT_GAP_Y = 72;
-const ROOT_GAP = 88;
+const LAYOUT_GAP_X = 44;
+const LAYOUT_GAP_Y = 48;
+const ROOT_GAP = 64;
 type GuideSegment = { coordinate: number; start: number; end: number };
 type LayoutBranch = { id: string; children: LayoutBranch[]; leafCount: number; depth: number; maxDepth: number };
 
