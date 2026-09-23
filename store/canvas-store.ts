@@ -25,7 +25,7 @@ type CanvasState = CanvasSnapshot & {
   redo: () => void;
 };
 
-const emptySnapshot = (): CanvasSnapshot => ({ nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 } });
+const emptySnapshot = (): CanvasSnapshot => ({ nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1.1 } });
 
 export const useCanvasStore = create<CanvasState>((set, get) => {
   const snapshot = (): CanvasSnapshot => {

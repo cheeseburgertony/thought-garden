@@ -58,6 +58,7 @@ import ThoughtNodeView from "@/components/thought-node";
 import { useCanvasStore } from "@/store/canvas-store";
 
 const nodeTypes = { thought: ThoughtNodeView };
+const INITIAL_SINGLE_NODE_ZOOM = 1.15;
 type AlignmentGuideStyle = { left: number; top: number; width?: number; height?: number };
 const examples = [
   "我想做一个 AI 产品",
@@ -100,6 +101,7 @@ function CanvasWorkspace() {
   const draftRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const exportMenuRef = useRef<HTMLDetailsElement>(null);
+  const initialSingleNodeViewApplied = useRef(false);
 
   useEffect(() => {
     const saved = loadCanvas();
@@ -107,6 +109,20 @@ function CanvasWorkspace() {
     const timer = window.setTimeout(() => setHydrated(true), 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated || initialSingleNodeViewApplied.current) return;
+    initialSingleNodeViewApplied.current = true;
+    const state = useCanvasStore.getState();
+    if (state.nodes.length !== 1 || state.viewport.zoom >= 1) return;
+
+    const node = state.nodes[0];
+    const centerX = node.position.x + (node.measured?.width ?? 254) / 2;
+    const centerY = node.position.y + (node.measured?.height ?? 105) / 2;
+    void flow.setCenter(centerX, centerY, { zoom: INITIAL_SINGLE_NODE_ZOOM, duration: 0 }).then(() => {
+      useCanvasStore.getState().setViewport(flow.getViewport());
+    });
+  }, [flow, hydrated]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
