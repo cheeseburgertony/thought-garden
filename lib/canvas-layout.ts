@@ -7,11 +7,21 @@ const ALIGNMENT_TOLERANCE = 8;
 const LAYOUT_GAP_X = 44;
 const LAYOUT_GAP_Y = 48;
 const ROOT_GAP = 64;
+const ROW_STAGGER = (NODE_WIDTH + LAYOUT_GAP_X) / 2;
 type GuideSegment = { coordinate: number; start: number; end: number };
-type LayoutBranch = { id: string; children: LayoutBranch[]; leafCount: number; depth: number; maxDepth: number };
+type LayoutBranch = {
+  id: string;
+  children: LayoutBranch[];
+  rows: LayoutBranch[][];
+  width: number;
+  height: number;
+  nodeWidth: number;
+  nodeHeight: number;
+};
 
 export function arrangeThoughtNodes(nodes: ThoughtNode[], edges: CanvasEdge[], maxRowWidth = 1400): ThoughtNode[] {
   if (!nodes.length) return nodes;
+  const layoutWidth = Math.max(NODE_WIDTH, maxRowWidth);
 
   const byId = new Map(nodes.map((node) => [node.id, node]));
   const childrenBySource = new Map<string, string[]>();
@@ -29,7 +39,16 @@ export function arrangeThoughtNodes(nodes: ThoughtNode[], edges: CanvasEdge[], m
     for (const childId of childrenBySource.get(id) ?? []) {
       if (!assigned.has(childId)) children.push(buildBranch(childId));
     }
-    return { id, children, leafCount: 0, depth: 0, maxDepth: 0 };
+    const node = byId.get(id)!;
+    return {
+      id,
+      children,
+      rows: [],
+      width: node.measured?.width ?? NODE_WIDTH,
+      height: node.measured?.height ?? NODE_HEIGHT,
+      nodeWidth: node.measured?.width ?? NODE_WIDTH,
+      nodeHeight: node.measured?.height ?? NODE_HEIGHT,
+    };
   };
   const roots: LayoutBranch[] = [];
   for (const node of nodes) {
@@ -39,50 +58,75 @@ export function arrangeThoughtNodes(nodes: ThoughtNode[], edges: CanvasEdge[], m
     if (!assigned.has(node.id)) roots.push(buildBranch(node.id));
   }
 
-  const levelHeights: number[] = [];
-  const measure = (branch: LayoutBranch, depth: number): number => {
-    branch.depth = depth;
-    levelHeights[depth] = Math.max(levelHeights[depth] ?? 0, byId.get(branch.id)?.measured?.height ?? NODE_HEIGHT);
-    branch.leafCount = branch.children.reduce((count, child) => count + measure(child, depth + 1), 0) || 1;
-    branch.maxDepth = branch.children.reduce((deepest, child) => Math.max(deepest, child.maxDepth), depth);
-    return branch.leafCount;
-  };
-  for (const root of roots) measure(root, 0);
+  const measure = (branch: LayoutBranch) => {
+    for (const child of branch.children) measure(child);
 
-  const levelY: number[] = [];
-  for (let depth = 0; depth < levelHeights.length; depth += 1) {
-    levelY[depth] = depth === 0 ? 0 : levelY[depth - 1] + levelHeights[depth - 1] + LAYOUT_GAP_Y;
-  }
-  const widestNode = Math.max(...nodes.map((node) => node.measured?.width ?? NODE_WIDTH));
-  const columnWidth = widestNode + LAYOUT_GAP_X;
+    let row: LayoutBranch[] = [];
+    let rowWidth = 0;
+    for (const child of branch.children) {
+      const nextWidth = rowWidth + (row.length ? LAYOUT_GAP_X : 0) + child.width;
+      if (row.length && nextWidth > layoutWidth) {
+        branch.rows.push(row);
+        row = [];
+        rowWidth = 0;
+      }
+      rowWidth += (row.length ? LAYOUT_GAP_X : 0) + child.width;
+      row.push(child);
+    }
+    if (row.length) branch.rows.push(row);
+
+    const rowWidths = branch.rows.map((items, index) => (
+      items.reduce((width, child) => width + child.width, LAYOUT_GAP_X * (items.length - 1)) + (index % 2 ? ROW_STAGGER : 0)
+    ));
+    const rowHeights = branch.rows.map((items) => Math.max(...items.map((child) => child.height)));
+    branch.width = Math.max(branch.nodeWidth, ...rowWidths);
+    branch.height = branch.nodeHeight + (branch.rows.length
+      ? LAYOUT_GAP_Y + rowHeights.reduce((height, rowHeight, index) => height + rowHeight + (index ? LAYOUT_GAP_Y : 0), 0)
+      : 0);
+  };
+  for (const root of roots) measure(root);
+
   const positions = new Map<string, { x: number; y: number }>();
   const placeBranch = (branch: LayoutBranch, left: number, top: number) => {
-    let childLeft = left;
-    for (const child of branch.children) {
-      placeBranch(child, childLeft, top);
-      childLeft += child.leafCount * columnWidth;
+    positions.set(branch.id, { x: left + (branch.width - branch.nodeWidth) / 2, y: top });
+    let rowTop = top + branch.nodeHeight + LAYOUT_GAP_Y;
+    for (const [rowIndex, row] of branch.rows.entries()) {
+      const rowOffset = rowIndex % 2 ? ROW_STAGGER : 0;
+      const rowWidth = row.reduce((width, child) => width + child.width, LAYOUT_GAP_X * (row.length - 1));
+      let childLeft = left + (branch.width - rowWidth - rowOffset) / 2 + rowOffset;
+      const rowHeight = Math.max(...row.map((child) => child.height));
+      for (const child of row) {
+        placeBranch(child, childLeft, rowTop);
+        childLeft += child.width + LAYOUT_GAP_X;
+      }
+      rowTop += rowHeight + LAYOUT_GAP_Y;
     }
-    const node = byId.get(branch.id)!;
-    const center = branch.children.length
-      ? left + branch.leafCount * columnWidth / 2
-      : left + columnWidth / 2;
-    positions.set(branch.id, { x: center - (node.measured?.width ?? NODE_WIDTH) / 2, y: top + levelY[branch.depth] });
   };
 
-  let rowX = 0;
-  let rowY = 0;
-  let rowHeight = 0;
+  const rootRows: LayoutBranch[][] = [];
+  let rootRow: LayoutBranch[] = [];
+  let rootRowWidth = 0;
   for (const root of roots) {
-    const rootWidth = root.leafCount * columnWidth;
-    const rootHeight = levelY[root.maxDepth] + levelHeights[root.maxDepth];
-    if (rowX > 0 && rowX + rootWidth > maxRowWidth) {
-      rowX = 0;
-      rowY += rowHeight + ROOT_GAP;
-      rowHeight = 0;
+    const nextWidth = rootRowWidth + (rootRow.length ? ROOT_GAP : 0) + root.width;
+    if (rootRow.length && nextWidth > layoutWidth) {
+      rootRows.push(rootRow);
+      rootRow = [];
+      rootRowWidth = 0;
     }
-    placeBranch(root, rowX, rowY);
-    rowX += rootWidth + ROOT_GAP;
-    rowHeight = Math.max(rowHeight, rootHeight);
+    rootRowWidth += (rootRow.length ? ROOT_GAP : 0) + root.width;
+    rootRow.push(root);
+  }
+  if (rootRow.length) rootRows.push(rootRow);
+
+  let rowTop = 0;
+  for (const row of rootRows) {
+    let rootLeft = 0;
+    const rowHeight = Math.max(...row.map((root) => root.height));
+    for (const root of row) {
+      placeBranch(root, rootLeft, rowTop);
+      rootLeft += root.width + ROOT_GAP;
+    }
+    rowTop += rowHeight + ROOT_GAP;
   }
 
   return nodes.map((node) => {
