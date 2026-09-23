@@ -58,6 +58,7 @@ button { color: inherit; }
 .react-flow__pane:active { cursor: grabbing; }
 .react-flow__node-thought { cursor: grab; }
 .react-flow__node.dragging .thought-node { cursor: grabbing; }
+.canvas-viewport[data-tool="select"] .react-flow__pane { cursor: default; }
 .canvas-viewport[data-tool="hand"] .react-flow__node-thought { cursor: grab; }
 .canvas-viewport[data-tool="connect"] .react-flow__pane { cursor: crosshair; }
 .canvas-viewport[data-tool="connect"] .thought-node { cursor: default; }
