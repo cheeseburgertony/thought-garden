@@ -159,7 +159,7 @@ button { color: inherit; }
 .quick-entry input::placeholder { color: var(--subtle); }
 .quick-entry button { display: grid; width: 27px; height: 27px; flex: none; place-items: center; border: 0; border-radius: 6px; background: var(--accent); color: white; cursor: pointer; }
 .quick-entry > span { position: absolute; bottom: 5px; left: 14px; color: var(--subtle); font-size: 9px; }
-.canvas-hint { position: absolute; z-index: 3; bottom: 69px; left: 50%; display: flex; max-width: calc(100vw - 32px); align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; transform: translateX(-50%); color: var(--subtle); font-size: 10px; pointer-events: none; }
+.canvas-hint { position: absolute; z-index: 1; bottom: 69px; left: 50%; display: flex; max-width: calc(100vw - 32px); align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; transform: translateX(-50%); color: var(--subtle); font-size: 10px; pointer-events: none; }
 .canvas-toolbar { position: absolute; z-index: 6; bottom: 13px; left: 50%; display: flex; width: max-content; max-width: calc(100vw - 24px); align-items: center; gap: 3px; padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); backdrop-filter: blur(16px); }
 .canvas-tool { display: flex; flex: 0 0 auto; height: 34px; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; white-space: nowrap; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
 .canvas-tool:hover { background: var(--accent-wash); color: var(--accent-deep); }
