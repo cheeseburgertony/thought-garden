@@ -21,7 +21,6 @@ import { Command } from "cmdk";
 import {
   ArrowDownToLine,
   Check,
-  ChevronDown,
   Command as CommandIcon,
   Expand,
   FileInput,
@@ -579,8 +578,8 @@ function CanvasWorkspace() {
             <button className="icon-button search-launcher" onClick={() => setSearchOpen(true)} title="搜索想法 ⌘F" aria-label="搜索想法"><Search size={16} /></button>
             <span className="toolbar-divider" />
             <details className="export-menu-wrap" ref={exportMenuRef}>
-              <summary className="icon-button export-menu-trigger" title="导出画布" aria-label="导出画布">
-                <FileOutput size={15} /><ChevronDown size={11} />
+              <summary className="icon-button export-menu-trigger" title="导出 JSON 或 PNG" aria-label="导出 JSON 或 PNG">
+                <FileOutput size={15} />
               </summary>
               <div className="export-menu" role="menu" aria-label="导出格式">
                 <button className="export-menu-item" role="menuitem" onClick={() => { exportFile(); exportMenuRef.current?.removeAttribute("open"); }}>
