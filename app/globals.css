@@ -73,24 +73,24 @@ button { color: inherit; }
 .react-flow__node-thought { width: 254px; overflow: visible; border: 0; background: transparent; }
 .react-flow__node-thought.selected { box-shadow: none !important; }
 
-.thought-node { position: relative; min-height: 105px; padding: 14px 16px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-solid); box-shadow: 0 2px 9px rgba(40, 48, 40, .045), 0 1px 2px rgba(40, 48, 40, .035); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; animation: node-arrive .2s ease-out both; }
-.thought-node:hover { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: 0 9px 24px rgba(40, 48, 40, .085), 0 2px 6px rgba(40, 48, 40, .04); }
-.thought-node.is-selected { border-color: rgba(83, 133, 109, .66); box-shadow: 0 0 0 2px rgba(83, 133, 109, .09), 0 8px 22px rgba(40, 48, 40, .07); }
-.thought-node.kind-risk { border-left: 2px solid #b68762; }
-.thought-node.kind-challenge { border-left: 2px solid #8c7a9b; }
-.thought-node.kind-insight { border-left: 2px solid #6e9982; }
-.thought-kind { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; line-height: 1; letter-spacing: .035em; }
-.thought-kind svg { color: var(--accent); }
-.kind-risk .thought-kind svg { color: #b68762; }
-.kind-challenge .thought-kind svg { color: #8c7a9b; }
-.thought-text { margin-top: 12px; color: var(--text); font-size: 13px; font-weight: 480; line-height: 1.62; white-space: pre-wrap; overflow-wrap: anywhere; }
-.thought-editor { display: block; width: 100%; min-height: 54px; margin-top: 9px; padding: 0; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 13px; line-height: 1.62; }
-.thought-footer { display: flex; min-height: 14px; justify-content: flex-end; align-items: center; gap: 7px; margin-top: 9px; color: var(--subtle); font-size: 9px; }
+.thought-node { --node-accent: var(--accent); --node-tint: var(--accent-wash); position: relative; min-height: 105px; padding: 15px 17px 12px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-solid); box-shadow: 0 3px 12px rgba(40, 48, 40, .055), 0 1px 3px rgba(40, 48, 40, .035); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; animation: node-arrive .2s ease-out both; }
+.thought-node::before { position: absolute; top: 13px; bottom: 13px; left: 0; width: 3px; border-radius: 0 3px 3px 0; background: var(--node-accent); content: ""; opacity: .82; }
+.thought-node:hover { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: 0 11px 27px rgba(40, 48, 40, .09), 0 2px 7px rgba(40, 48, 40, .045); }
+.thought-node.is-selected { border-color: rgba(83, 133, 109, .72); box-shadow: 0 0 0 3px rgba(83, 133, 109, .12), 0 10px 25px rgba(40, 48, 40, .075); }
+.thought-node.kind-risk { --node-accent: #b68762; --node-tint: rgba(182, 135, 98, .12); }
+.thought-node.kind-challenge { --node-accent: #8c7a9b; --node-tint: rgba(140, 122, 155, .12); }
+.thought-node.kind-insight { --node-accent: #6e9982; --node-tint: rgba(110, 153, 130, .13); }
+.thought-kind { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; font-weight: 550; line-height: 1; letter-spacing: .035em; }
+.thought-kind svg { width: 21px; height: 21px; padding: 4px; border-radius: 7px; background: var(--node-tint); color: var(--node-accent); }
+.thought-text { margin-top: 11px; color: var(--text); font-size: 14px; font-weight: 500; line-height: 1.58; letter-spacing: -.012em; white-space: pre-wrap; overflow-wrap: anywhere; }
+.thought-editor { display: block; width: 100%; min-height: 54px; margin-top: 9px; padding: 0; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 14px; line-height: 1.58; }
+.thought-footer { display: flex; min-height: 16px; justify-content: flex-end; align-items: center; gap: 7px; margin-top: 8px; color: var(--subtle); font-size: 9px; }
+.thought-footer > span:not(.thinking-label):not(.mini-spinner) { padding: 3px 7px; border-radius: 999px; background: var(--node-tint); color: var(--muted); }
 .thinking-label { display: inline-flex; align-items: center; gap: 5px; margin-right: auto; color: var(--accent); }
 .thinking-dot, .save-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
 .thinking-dot { animation: breathe 1.3s ease-in-out infinite; }
 .mini-spinner { width: 11px; height: 11px; border: 1px solid var(--line-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
-.thought-node .react-flow__handle { width: 10px; height: 10px; border: 2px solid var(--surface-solid); border-radius: 50%; background: var(--accent); opacity: .62; box-shadow: 0 0 0 1px rgba(83, 133, 109, .2); cursor: crosshair; transition: opacity .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease; }
+.thought-node .react-flow__handle { width: 10px; height: 10px; border: 2px solid var(--surface-solid); border-radius: 50%; background: var(--node-accent); opacity: .72; box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent) 20%, transparent); cursor: crosshair; transition: opacity .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease; }
 .thought-node:hover .react-flow__handle, .thought-node.is-selected .react-flow__handle { opacity: 1; transform: scale(1.1); }
 .thought-node .react-flow__handle:hover { background: var(--accent-deep); box-shadow: 0 0 0 4px var(--accent-wash); transform: scale(1.2); }
 
