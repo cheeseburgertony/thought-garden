@@ -87,9 +87,6 @@ button { color: inherit; }
 .react-flow__controls-button:last-child { border: 0 !important; }
 .react-flow__controls-button:hover { background: var(--accent-wash) !important; }
 .react-flow__controls-button svg { max-width: 13px; max-height: 13px; }
-.react-flow__attribution { background: transparent !important; color: var(--subtle) !important; }
-.react-flow__attribution a { color: var(--muted) !important; }
-[data-theme="dark"] .react-flow__attribution { background: rgba(29, 33, 30, .78) !important; border-radius: 6px 0 0; }
 .react-flow__selection { background: rgba(84, 134, 110, .075) !important; border: 1px solid rgba(84, 134, 110, .28) !important; }
 .react-flow__edge-path { stroke-linecap: round; transition: stroke .15s ease, stroke-width .15s ease; }
 .react-flow__connection-path { stroke-linecap: round; animation: connection-flow .75s linear infinite; }

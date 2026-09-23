@@ -538,6 +538,7 @@ function CanvasWorkspace() {
           connectionRadius={36}
           minZoom={0.2}
           maxZoom={2.2}
+          proOptions={{ hideAttribution: true }}
           defaultEdgeOptions={{ type: "default", style: { stroke: "var(--edge)", strokeWidth: 1.65 }, interactionWidth: 20 }}
         >
           <CanvasBackground />
