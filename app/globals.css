@@ -52,7 +52,7 @@
 }
 ::view-transition-new(root) {
   z-index: 2;
-  animation: theme-reveal .48s cubic-bezier(.22, 1, .36, 1) both;
+  animation: theme-reveal .65s cubic-bezier(.22, .61, .36, 1) both;
 }
 @keyframes theme-reveal {
   from { clip-path: circle(0 at var(--theme-reveal-x) var(--theme-reveal-y)); }
