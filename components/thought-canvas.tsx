@@ -576,6 +576,8 @@ function CanvasWorkspace() {
             <button className="icon-button" onClick={redo} title="重做 ⌘⇧Z" aria-label="重做"><Redo2 size={16} /></button>
             <span className="toolbar-divider" />
             <button className="icon-button" onClick={fitCanvas} title="适应画布" aria-label="适应画布"><Focus size={16} /></button>
+            <button className="icon-button search-launcher" onClick={() => setSearchOpen(true)} title="搜索想法 ⌘F" aria-label="搜索想法"><Search size={16} /></button>
+            <span className="toolbar-divider" />
             <details className="export-menu-wrap" ref={exportMenuRef}>
               <summary className="icon-button export-menu-trigger" title="导出画布" aria-label="导出画布">
                 <FileOutput size={15} /><ChevronDown size={11} />
@@ -643,7 +645,6 @@ function CanvasWorkspace() {
         </div>
       )}
 
-      <button className="search-launcher" onClick={() => setSearchOpen(true)} aria-label="搜索想法"><Search size={15} /><span>搜索</span><kbd>⌘ F</kbd></button>
       <Toaster position="bottom-center" theme={theme} closeButton={false} />
     </main>
   );

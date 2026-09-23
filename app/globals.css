@@ -179,9 +179,6 @@ button { color: inherit; }
 .hint-dot { color: var(--line-strong); }
 .canvas-status { position: absolute; z-index: 3; bottom: 20px; left: 22px; display: flex; align-items: center; gap: 7px; color: var(--subtle); font-size: 10px; pointer-events: none; }
 .save-dot { width: 5px; height: 5px; opacity: .75; }
-.search-launcher { position: absolute; z-index: 4; right: 20px; bottom: 124px; display: inline-flex; height: 31px; align-items: center; gap: 7px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--muted); cursor: pointer; box-shadow: 0 2px 8px rgba(34, 44, 36, .04); font-size: 10px; }
-.search-launcher:hover { color: var(--accent-deep); }
-.search-launcher kbd { margin-left: 5px; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 
 .dialog-backdrop { position: fixed; z-index: 20; inset: 0; display: flex; justify-content: center; align-items: flex-start; padding: min(20vh, 150px) 16px 16px; background: rgba(24, 29, 25, .25); backdrop-filter: blur(3px); }
@@ -236,12 +233,16 @@ button { color: inherit; }
   .canvas-toolbar { bottom: 9px; gap: 2px; padding: 4px; }
   .canvas-tool { height: 33px; gap: 5px; padding: 0 7px; font-size: 9px; }
   .canvas-tool kbd { display: none; }
-  .search-launcher { right: 11px; bottom: 124px; }
 }
 
 @media (max-width: 360px) {
   .canvas-tool { width: 34px; min-width: 34px; padding: 0; }
   .canvas-tool > span { display: none; }
+}
+
+@media (max-width: 430px) {
+  .brand-divider, .brand-cn { display: none; }
+  .search-launcher { position: absolute; top: 44px; right: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
