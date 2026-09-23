@@ -82,7 +82,7 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
               onClick={(event) => { event.stopPropagation(); toggleBranch(id); }}
             >
               {data.collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-              <span>{data.collapsed ? "展开" : "收起"} {childCount}</span>
+              <span className="branch-toggle-count">{childCount}</span>
             </button>
           )}
         </div>
