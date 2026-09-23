@@ -598,6 +598,12 @@ function CanvasWorkspace() {
                   <ChevronLeft size={17} />
                 </button>
               </header>
+              <div className="guide-intro">
+                <strong>这个项目是做什么的？</strong>
+                <p>思维花园是一张 AI 驱动的无限思维画布。从一个问题或念头出发，逐步展开分支、连接想法。</p>
+                <strong>它想解决什么？</strong>
+                <p>减少灵感散落难回看、思考停在第一层、观点关系不清的问题，也帮你补充反例与风险。</p>
+              </div>
               <div className="guide-list">
                 {thoughtGuides.map(({ action, icon: Icon, description }) => (
                   <article className="guide-item" key={action}>
