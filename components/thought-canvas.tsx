@@ -489,6 +489,9 @@ function CanvasWorkspace() {
         >
           <Background variant={BackgroundVariant.Dots} gap={25} size={1} color="var(--dot)" />
           <Controls showInteractive={false} position="bottom-right" />
+          <div className="canvas-hint">
+            {toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白框选 <span className="hint-dot">·</span> <kbd>Shift</kbd> 多选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
+          </div>
         </ReactFlow>
 
         {alignmentGuides.vertical && <div className="alignment-guide is-vertical" style={alignmentGuides.vertical} />}
@@ -592,9 +595,6 @@ function CanvasWorkspace() {
           </div>
         </header>
 
-        <div className="canvas-hint">
-          {toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白框选 <span className="hint-dot">·</span> <kbd>Shift</kbd> 多选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
-        </div>
         <div className="canvas-status"><span className="save-dot" />保存在此设备</div>
       </div>
 
