@@ -54,6 +54,9 @@ button { color: inherit; }
 .react-flow__pane:active { cursor: grabbing; }
 .react-flow__node-thought { cursor: grab; }
 .react-flow__node.dragging .thought-node { cursor: grabbing; }
+.canvas-viewport[data-tool="hand"] .react-flow__node-thought { cursor: grab; }
+.canvas-viewport[data-tool="connect"] .react-flow__pane { cursor: crosshair; }
+.canvas-viewport[data-tool="connect"] .thought-node { cursor: default; }
 .react-flow__controls { overflow: hidden; border: 1px solid var(--line) !important; border-radius: 11px !important; background: var(--surface) !important; box-shadow: 0 4px 15px rgba(30, 40, 31, .06) !important; }
 .react-flow__controls-button { width: 31px !important; height: 31px !important; border-bottom: 1px solid var(--line) !important; background: transparent !important; fill: var(--muted) !important; }
 .react-flow__controls-button:last-child { border: 0 !important; }
@@ -87,6 +90,7 @@ button { color: inherit; }
 .mini-spinner { width: 11px; height: 11px; border: 1px solid var(--line-strong); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 .thought-node .react-flow__handle { visibility: hidden; width: 10px; height: 10px; border: 2px solid var(--surface-solid); border-radius: 50%; background: var(--node-accent); opacity: 0; box-shadow: 0 0 0 2px color-mix(in srgb, var(--node-accent) 20%, transparent); cursor: crosshair; transition: opacity .15s ease, background .15s ease, transform .15s ease, box-shadow .15s ease; }
 .thought-node:hover .react-flow__handle { visibility: visible; opacity: .88; }
+.canvas-viewport[data-tool="connect"] .thought-node .react-flow__handle { visibility: visible; opacity: 1; }
 .thought-node .react-flow__handle:hover { background: var(--accent-deep); box-shadow: 0 0 0 4px var(--accent-wash); }
 
 @media (hover: none) {
@@ -147,11 +151,14 @@ button { color: inherit; }
 .quick-entry input::placeholder { color: var(--subtle); }
 .quick-entry button { display: grid; width: 27px; height: 27px; flex: none; place-items: center; border: 0; border-radius: 6px; background: var(--accent); color: white; cursor: pointer; }
 .quick-entry > span { position: absolute; bottom: 5px; left: 14px; color: var(--subtle); font-size: 9px; }
-.canvas-hint { position: absolute; z-index: 3; bottom: 20px; left: 50%; display: flex; max-width: calc(100vw - 32px); align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; transform: translateX(-50%); color: var(--subtle); font-size: 10px; pointer-events: none; }
-.canvas-hint.has-selection { bottom: 64px; }
-.selection-toolbar { position: absolute; z-index: 6; bottom: 13px; left: 50%; display: flex; align-items: center; padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); backdrop-filter: blur(16px); }
-.selection-action { display: flex; height: 34px; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: #b36e66; cursor: pointer; font-size: 10px; transition: background .15s ease, color .15s ease; }
-.selection-action:hover { background: rgba(179, 110, 102, .09); color: #a35a52; }
+.canvas-hint { position: absolute; z-index: 3; bottom: 69px; left: 50%; display: flex; max-width: calc(100vw - 32px); align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px; transform: translateX(-50%); color: var(--subtle); font-size: 10px; pointer-events: none; }
+.canvas-toolbar { position: absolute; z-index: 6; bottom: 13px; left: 50%; display: flex; align-items: center; gap: 3px; padding: 5px; transform: translateX(-50%); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); backdrop-filter: blur(16px); }
+.canvas-tool { display: flex; height: 34px; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 10px; transition: background .15s ease, color .15s ease, box-shadow .15s ease; }
+.canvas-tool:hover { background: var(--accent-wash); color: var(--accent-deep); }
+.canvas-tool.is-active { background: var(--accent-wash); color: var(--accent-deep); box-shadow: inset 0 0 0 1px rgba(83, 133, 109, .12); }
+.canvas-tool.is-danger { color: #b36e66; }
+.canvas-tool.is-danger:hover { background: rgba(179, 110, 102, .09); color: #a35a52; }
+.canvas-tool kbd { min-width: 17px; height: 17px; background: rgba(255, 255, 255, .5); }
 .alignment-guide { position: absolute; z-index: 2; pointer-events: none; opacity: .9; }
 .alignment-guide.is-vertical { width: 0; border-left: 1px dashed var(--accent); }
 .alignment-guide.is-horizontal { height: 0; border-top: 1px dashed var(--accent); }
@@ -212,10 +219,10 @@ button { color: inherit; }
   .node-toolbar { gap: 0; }
   .node-action { gap: 4px; padding: 0 6px; font-size: 10px; }
   .canvas-status { bottom: 16px; left: 12px; font-size: 9px; }
-  .canvas-hint { bottom: 14px; gap: 5px; font-size: 9px; }
-  .canvas-hint.has-selection { bottom: 59px; }
-  .selection-toolbar { bottom: 9px; padding: 4px; }
-  .selection-action { height: 33px; padding: 0 7px; font-size: 9px; }
+  .canvas-hint { bottom: 65px; gap: 6px; font-size: 9px; }
+  .canvas-toolbar { bottom: 9px; gap: 2px; padding: 4px; }
+  .canvas-tool { height: 33px; gap: 5px; padding: 0 7px; font-size: 9px; }
+  .canvas-tool kbd { display: none; }
   .search-launcher { right: 11px; bottom: 11px; }
 }
 
