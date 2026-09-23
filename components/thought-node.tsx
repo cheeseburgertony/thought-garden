@@ -2,16 +2,20 @@
 
 import { useState } from "react";
 import { Handle, NodeToolbar, Position } from "@xyflow/react";
-import { ChevronDown, ChevronRight, Copy, Ellipsis, Lightbulb, MessageCircleQuestion, ShieldAlert, Sparkles, Swords, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, CircleHelp, Copy, Ellipsis, Lightbulb, MessageCircleQuestion, ShieldAlert, Sparkles, Swords, Trash2 } from "lucide-react";
 import { nanoid } from "nanoid";
 import { actionLabels, type ThoughtAction, type ThoughtNodeData } from "@/lib/types";
 import { useCanvasStore } from "@/store/canvas-store";
 
-const actionButtons: { action: ThoughtAction; icon: typeof Sparkles }[] = [
-  { action: "expand", icon: Sparkles },
-  { action: "deep", icon: MessageCircleQuestion },
-  { action: "challenge", icon: Swords },
-  { action: "risk", icon: ShieldAlert },
+const actionButtons: { action: ThoughtAction; icon: typeof Sparkles; description: string }[] = [
+  { action: "expand", icon: Sparkles, description: "围绕当前想法发散，生成相关方向和子问题。" },
+  { action: "deep", icon: MessageCircleQuestion, description: "追问原因、前提和细节，把模糊想法挖具体。" },
+  { action: "challenge", icon: Swords, description: "寻找反例和假设漏洞，检查想法是否站得住。" },
+  { action: "risk", icon: ShieldAlert, description: "识别实施阻碍、失败方式和潜在代价。" },
+];
+const actionGuides = [
+  ...actionButtons,
+  { action: "perspective" as const, icon: Sparkles, description: "切换用户、团队或反对者视角重新审视。" },
 ];
 
 const kindIcons = {
@@ -58,11 +62,25 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
     <>
       <NodeToolbar position={Position.Top} offset={12} className="node-toolbar">
         {actionButtons.map(({ action, icon: ActionIcon }) => (
-          <button key={action} className="node-action" onClick={() => data.onAction?.(id, action)} title={actionLabels[action]}>
+          <button key={action} className="node-action" onClick={() => data.onAction?.(id, action)} aria-label={actionLabels[action]}>
             <ActionIcon size={14} strokeWidth={1.8} />
             <span>{actionLabels[action]}</span>
           </button>
         ))}
+        <details className="node-guide-wrap nodrag nopan">
+          <summary className="node-guide-trigger" aria-label="AI 思维操作使用指南" data-tooltip="查看使用指南"><CircleHelp size={15} /></summary>
+          <div className="node-guide-menu" role="note" aria-label="AI 思维操作使用指南">
+            <div className="node-guide-title">AI 思维操作指南</div>
+            <div className="node-guide-list">
+              {actionGuides.map(({ action, icon: GuideIcon, description }) => (
+                <div className="node-guide-item" key={action}>
+                  <div className="node-guide-label"><GuideIcon size={13} /><strong>{actionLabels[action]}</strong></div>
+                  <p>{description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </details>
         <details className="node-more-wrap">
           <summary className="node-more" aria-label="更多操作"><Ellipsis size={17} /></summary>
           <div className="node-more-menu">
