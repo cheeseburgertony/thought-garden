@@ -69,7 +69,23 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
         onDoubleClick={(event) => { event.stopPropagation(); setDraft(data.text); setEditing(true); }}
       >
         <Handle type="target" position={Position.Top} />
-        <div className="thought-kind"><Icon size={13} strokeWidth={1.8} /><span>{data.createdBy === "ai" ? "AI 思绪" : data.depth === 0 ? "起点" : "思绪"}</span></div>
+        <div className="thought-header">
+          <div className="thought-kind"><Icon size={13} strokeWidth={1.8} /><span>{data.createdBy === "ai" ? "AI 思绪" : data.depth === 0 ? "起点" : "思绪"}</span></div>
+          {childCount > 0 && (
+            <button
+              type="button"
+              className="branch-toggle nodrag nopan"
+              title={data.collapsed ? `展开 ${childCount} 个子节点` : `收起 ${childCount} 个子节点`}
+              aria-label={data.collapsed ? `展开 ${childCount} 个子节点` : `收起 ${childCount} 个子节点`}
+              aria-expanded={!data.collapsed}
+              onMouseDown={(event) => event.stopPropagation()}
+              onClick={(event) => { event.stopPropagation(); toggleBranch(id); }}
+            >
+              {data.collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+              <span>{data.collapsed ? "展开" : "收起"} {childCount}</span>
+            </button>
+          )}
+        </div>
         {editing ? (
           <textarea
             autoFocus
@@ -87,21 +103,6 @@ export default function ThoughtNodeView({ id, data, selected }: { id: string; da
         <div className="thought-footer">
           {data.busy ? <span className="thinking-label"><span className="thinking-dot" />正在思考</span> : data.createdBy === "ai" ? <span>由 AI 生长</span> : null}
           {data.busy && <span className="mini-spinner" aria-hidden="true" />}
-          {childCount > 0 && (
-            <button
-              type="button"
-              className="branch-toggle nodrag nopan"
-              title={data.collapsed ? `展开 ${childCount} 个子节点` : `收起 ${childCount} 个子节点`}
-              aria-label={data.collapsed ? `展开 ${childCount} 个子节点` : `收起 ${childCount} 个子节点`}
-              aria-expanded={!data.collapsed}
-              onMouseDown={(event) => event.stopPropagation()}
-              onClick={(event) => { event.stopPropagation(); toggleBranch(id); }}
-            >
-              {data.collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-              <span>{data.collapsed ? "展开" : "收起"}</span>
-              <span className="branch-toggle-count">{childCount}</span>
-            </button>
-          )}
         </div>
         <Handle type="source" position={Position.Bottom} />
       </div>
