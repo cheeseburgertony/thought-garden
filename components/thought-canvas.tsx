@@ -625,14 +625,14 @@ function CanvasWorkspace() {
         <header className="topbar">
           <div className="brand-lockup"><span className="brand-mark"><Leaf size={17} strokeWidth={1.8} /></span><span>thought garden</span><span className="brand-divider" /><span className="brand-cn">思维花园</span></div>
           <div className="topbar-actions">
-            <button className="icon-button" onClick={undo} title="撤销 ⌘Z" aria-label="撤销"><Undo2 size={16} /></button>
-            <button className="icon-button" onClick={redo} title="重做 ⌘⇧Z" aria-label="重做"><Redo2 size={16} /></button>
+            <button className="icon-button" onClick={undo} data-tooltip="撤销 · ⌘Z" aria-label="撤销"><Undo2 size={16} /></button>
+            <button className="icon-button" onClick={redo} data-tooltip="重做 · ⌘⇧Z" aria-label="重做"><Redo2 size={16} /></button>
             <span className="toolbar-divider" />
-            <button className="icon-button" onClick={fitCanvas} title="适应画布" aria-label="适应画布"><Focus size={16} /></button>
-            <button className="icon-button search-launcher" onClick={() => setSearchOpen(true)} title="搜索想法 ⌘F" aria-label="搜索想法"><Search size={16} /></button>
+            <button className="icon-button" onClick={fitCanvas} data-tooltip="适应画布" aria-label="适应画布"><Focus size={16} /></button>
+            <button className="icon-button search-launcher" onClick={() => setSearchOpen(true)} data-tooltip="搜索想法 · ⌘F" aria-label="搜索想法"><Search size={16} /></button>
             <span className="toolbar-divider" />
             <details className="export-menu-wrap" ref={exportMenuRef}>
-              <summary className="icon-button export-menu-trigger" title="导出 JSON 或 PNG" aria-label="导出 JSON 或 PNG">
+              <summary className="icon-button export-menu-trigger" data-tooltip="导出 JSON 或 PNG" aria-label="导出 JSON 或 PNG">
                 <FileOutput size={15} />
               </summary>
               <div className="export-menu" role="menu" aria-label="导出格式">
@@ -644,9 +644,9 @@ function CanvasWorkspace() {
                 </button>
               </div>
             </details>
-            <button className="icon-button file-action" onClick={() => importRef.current?.click()} title="导入 JSON 文件" aria-label="导入"><FileInput size={15} /></button>
+            <button className="icon-button file-action" onClick={() => importRef.current?.click()} data-tooltip="导入 JSON 文件" aria-label="导入"><FileInput size={15} /></button>
             <span className="toolbar-divider" />
-            <button className="icon-button theme-toggle" onClick={toggleTheme} title="切换主题" aria-label="切换主题">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
+            <button className="icon-button theme-toggle" onClick={toggleTheme} data-tooltip="切换主题" aria-label="切换主题">{theme === "light" ? <Moon size={16} /> : <Sun size={16} />}</button>
           </div>
         </header>
 
