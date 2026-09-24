@@ -808,12 +808,12 @@ function CanvasWorkspace() {
                 {examples.map((text) => (
                   <button className="example-card" key={text} onClick={() => createThought(text, viewportCenter().position)}>
                     <strong>{text}</strong>
-                    <ChevronRight size={16} aria-hidden="true" />
+                    <ChevronRight size={18} aria-hidden="true" />
                   </button>
                 ))}
               </div>
               <button type="button" className="example-tour" onClick={loadExampleGarden}>
-                <Workflow size={15} />浏览示例画布<ChevronRight size={15} />
+                <Workflow size={16} />浏览示例画布<ChevronRight size={16} />
               </button>
             </div>
           </section>

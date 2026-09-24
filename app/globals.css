@@ -195,17 +195,17 @@ button { color: inherit; }
 .empty-copy { max-width: 420px; margin: 11px 0 18px; color: var(--muted); font-size: 15px; line-height: 1.75; }
 .primary-button { display: inline-flex; min-height: 40px; align-items: center; justify-content: center; gap: 7px; padding: 0 16px; border: 1px solid var(--accent); border-radius: 7px; background: var(--accent); color: #fff; cursor: pointer; font-size: 13px; font-weight: 550; box-shadow: 0 3px 9px rgba(68, 117, 88, .14); transition: transform .15s ease, background .15s ease; pointer-events: auto; }
 .primary-button:hover { transform: translateY(-1px); background: var(--accent-deep); }
-.examples { display: flex; width: min(470px, 100%); align-items: stretch; flex-direction: column; gap: 7px; margin-top: 25px; pointer-events: auto; }
-.examples > span { color: var(--subtle); font-size: 11px; text-align: center; }
-.example-grid { display: flex; flex-direction: column; gap: 0; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); box-shadow: 0 4px 14px rgba(37, 45, 39, .035); }
-.example-card { display: flex; min-height: 40px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px; border: 0; border-bottom: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--text); cursor: pointer; text-align: left; transition: background .15s ease, color .15s ease; }
+.examples { display: flex; width: min(470px, 100%); align-items: stretch; flex-direction: column; gap: 9px; margin-top: 29px; pointer-events: auto; }
+.examples > span { color: var(--muted); font-size: 12px; text-align: center; }
+.example-grid { display: flex; flex-direction: column; gap: 0; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-solid); box-shadow: 0 6px 20px rgba(37, 45, 39, .045); }
+.example-card { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 13px; border: 0; border-bottom: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--text); cursor: pointer; text-align: left; transition: background .15s ease, color .15s ease; }
 .example-card:last-child { border-bottom: 0; }
 .example-card:hover { background: var(--accent-wash); }
-.example-card strong { min-width: 0; color: var(--text); font-size: 13px; font-weight: 480; line-height: 1.5; transition: color .15s ease; }
-.example-card > svg { flex: none; color: var(--subtle); opacity: .55; transition: color .15s ease, opacity .15s ease, transform .15s ease; }
+.example-card strong { min-width: 0; color: var(--text); font-size: 14px; font-weight: 500; line-height: 1.5; transition: color .15s ease; }
+.example-card > svg { flex: none; color: var(--muted); opacity: .7; transition: color .15s ease, opacity .15s ease, transform .15s ease; }
 .example-card:hover strong, .example-card:hover > svg { color: var(--accent-deep); }
 .example-card:hover > svg { transform: translateX(2px); opacity: 1; }
-.example-tour { display: inline-flex; min-height: 34px; align-self: center; align-items: center; gap: 8px; margin-top: 3px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: var(--accent-deep); cursor: pointer; font-size: 12px; font-weight: 500; transition: background .15s ease; }
+.example-tour { display: inline-flex; min-height: 36px; align-self: center; align-items: center; gap: 8px; margin-top: 3px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: var(--accent-deep); cursor: pointer; font-size: 13px; font-weight: 500; transition: background .15s ease; }
 .example-tour:hover { background: var(--accent-wash); }
 .example-tour > svg:last-child { color: var(--subtle); }
 
@@ -366,7 +366,7 @@ button { color: inherit; }
   .empty-state { width: min(440px, calc(100vw - 32px)); }
   .empty-state h1 { font-size: 24px; }
   .example-grid { grid-template-columns: 1fr; gap: 5px; }
-  .example-card { min-height: 40px; }
+  .example-card { min-height: 42px; }
   .examples { gap: 7px; margin-top: 19px; }
   .quick-entry { width: min(320px, calc(100vw - 38px)); }
   .node-toolbar { gap: 0; }
