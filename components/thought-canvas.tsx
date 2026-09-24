@@ -55,7 +55,7 @@ import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { Toaster, toast } from "sonner";
 import { alignThoughtNode, arrangeThoughtNodes, fanOutPositions } from "@/lib/canvas-layout";
-import { getHiddenNodeIds } from "@/lib/canvas-graph";
+import { getDescendantIds, getHiddenNodeIds } from "@/lib/canvas-graph";
 import { downloadCanvas, loadCanvas, saveCanvas } from "@/lib/persistence";
 import { CanvasFileSchema, ExpandResponseSchema } from "@/lib/schemas";
 import { actionLabels, type CanvasSummary, type ThoughtAction, type ThoughtNode } from "@/lib/types";
@@ -74,6 +74,11 @@ const examples = [
 
 type Draft = { x: number; y: number; position: { x: number; y: number } };
 type CanvasTool = "select" | "hand" | "connect";
+type CollapsedBranchDrag = {
+  id: string;
+  origin: { x: number; y: number };
+  positions: Map<string, { x: number; y: number }>;
+};
 
 const canvasTools = [
   { mode: "select", label: "操作", icon: MousePointer2 },
@@ -118,6 +123,7 @@ function CanvasWorkspace() {
   const importRef = useRef<HTMLInputElement>(null);
   const exportMenuRef = useRef<HTMLDetailsElement>(null);
   const initialSingleNodeViewApplied = useRef(false);
+  const collapsedBranchDrag = useRef<CollapsedBranchDrag | null>(null);
 
   useEffect(() => {
     const saved = loadCanvas();
@@ -295,9 +301,32 @@ function CanvasWorkspace() {
   })), [compactConnections, edges, hiddenNodeIds]);
   const selectedNodeCount = nodes.filter((node) => node.selected).length;
   const hasSelection = selectedNodeCount > 0 || edges.some((edge) => edge.selected);
-  const handleNodeDrag = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
+  const alignDraggedNode = useCallback((node: ThoughtNode) => {
     const currentNodes = useCanvasStore.getState().nodes;
-    const aligned = alignThoughtNode(node, currentNodes, flow.getViewport().zoom);
+    const branch = collapsedBranchDrag.current?.id === node.id ? collapsedBranchDrag.current : null;
+    const alignmentNodes = branch
+      ? currentNodes.filter((item) => !branch.positions.has(item.id))
+      : currentNodes;
+    const aligned = alignThoughtNode(node, alignmentNodes, flow.getViewport().zoom);
+
+    if (branch) {
+      const delta = { x: aligned.position.x - branch.origin.x, y: aligned.position.y - branch.origin.y };
+      useCanvasStore.getState().setNodes(currentNodes.map((item) => {
+        if (item.id === node.id) return { ...item, position: aligned.position };
+        const origin = branch.positions.get(item.id);
+        return origin ? { ...item, position: { x: origin.x + delta.x, y: origin.y + delta.y } } : item;
+      }));
+    } else if (aligned.position.x !== node.position.x || aligned.position.y !== node.position.y) {
+      useCanvasStore.getState().setNodes(currentNodes.map((item) => (
+        item.id === node.id ? { ...item, position: aligned.position } : item
+      )));
+    }
+
+    return aligned;
+  }, [flow]);
+
+  const handleNodeDrag = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
+    const aligned = alignDraggedNode(node);
     const bounds = canvasRef.current?.getBoundingClientRect();
 
     if (bounds) {
@@ -333,23 +362,12 @@ function CanvasWorkspace() {
       setAlignmentGuides({});
     }
 
-    if (aligned.position.x !== node.position.x || aligned.position.y !== node.position.y) {
-      useCanvasStore.getState().setNodes(currentNodes.map((item) => (
-        item.id === node.id ? { ...item, position: aligned.position } : item
-      )));
-    }
-  }, [flow]);
+  }, [alignDraggedNode, flow]);
   const handleNodeDragStop = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
     setAlignmentGuides({});
-    const currentNodes = useCanvasStore.getState().nodes;
-    const aligned = alignThoughtNode(node, currentNodes, flow.getViewport().zoom);
-
-    if (aligned.position.x !== node.position.x || aligned.position.y !== node.position.y) {
-      useCanvasStore.getState().setNodes(currentNodes.map((item) => (
-        item.id === node.id ? { ...item, position: aligned.position } : item
-      )));
-    }
-  }, [flow]);
+    alignDraggedNode(node);
+    collapsedBranchDrag.current = null;
+  }, [alignDraggedNode]);
 
   const openDraftAtPanePoint = useCallback((event: ReactMouseEvent) => {
     const target = event.target;
@@ -604,7 +622,17 @@ function CanvasWorkspace() {
             const edge = addEdge({ ...connection, id: nanoid(), type: "default" }, useCanvasStore.getState().edges);
             if (edge.length !== useCanvasStore.getState().edges.length) useCanvasStore.getState().connect(edge.at(-1)!);
           }}
-          onNodeDragStart={() => useCanvasStore.getState().checkpoint()}
+          onNodeDragStart={(_, node) => {
+            const state = useCanvasStore.getState();
+            state.checkpoint();
+            const descendants = node.data.collapsed ? getDescendantIds(node.id, state.edges) : new Set<string>();
+            const positions = new Map(state.nodes
+              .filter((item) => descendants.has(item.id))
+              .map((item) => [item.id, item.position]));
+            collapsedBranchDrag.current = positions.size
+              ? { id: node.id, origin: node.position, positions }
+              : null;
+          }}
           onNodeDrag={handleNodeDrag}
           onNodeDragStop={handleNodeDragStop}
           onMoveEnd={(_, nextViewport) => useCanvasStore.getState().setViewport(nextViewport)}
