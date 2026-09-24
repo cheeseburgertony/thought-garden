@@ -67,9 +67,9 @@ const nodeTypes = { thought: ThoughtNodeView };
 const INITIAL_SINGLE_NODE_ZOOM = 1.15;
 type AlignmentGuideStyle = { left: number; top: number; width?: number; height?: number };
 const examples = [
-  { topic: "产品探索", text: "我想做一个 AI 产品" },
-  { topic: "个人成长", text: "未来三年我应该提升什么能力？" },
-  { topic: "知识管理", text: "怎样设计一个更好的个人知识系统？" },
+  "我想做一个 AI 产品",
+  "未来三年我应该提升什么能力？",
+  "怎样设计一个更好的个人知识系统？",
 ];
 
 type Draft = { x: number; y: number; position: { x: number; y: number } };
@@ -803,17 +803,17 @@ function CanvasWorkspace() {
             <p className="empty-copy">写下一个困惑，再沿着问题、风险和新视角继续探索。</p>
             <button className="primary-button" onClick={openDraftAtCenter}><Plus size={16} />写下第一个想法</button>
             <div className="examples">
-              <span>或者，从一个真实问题开始</span>
+              <span>也可以从一个问题开始</span>
               <div className="example-grid">
-                {examples.map(({ topic, text }) => (
-                  <button className="example-card" key={topic} onClick={() => createThought(text, viewportCenter().position)}>
-                    <span>{topic}</span>
+                {examples.map((text) => (
+                  <button className="example-card" key={text} onClick={() => createThought(text, viewportCenter().position)}>
                     <strong>{text}</strong>
+                    <ChevronRight size={16} aria-hidden="true" />
                   </button>
                 ))}
               </div>
               <button type="button" className="example-tour" onClick={loadExampleGarden}>
-                <Workflow size={14} />打开一张示例画布<span>先看看想法如何生长</span>
+                <Workflow size={15} />浏览示例画布<ChevronRight size={15} />
               </button>
             </div>
           </section>
