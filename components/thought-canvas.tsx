@@ -67,9 +67,9 @@ const nodeTypes = { thought: ThoughtNodeView };
 const INITIAL_SINGLE_NODE_ZOOM = 1.15;
 type AlignmentGuideStyle = { left: number; top: number; width?: number; height?: number };
 const examples = [
-  "我想做一个 AI 产品",
-  "未来三年我应该提升什么能力？",
-  "怎样设计一个更好的个人知识系统？",
+  { topic: "产品探索", text: "我想做一个 AI 产品" },
+  { topic: "个人成长", text: "未来三年我应该提升什么能力？" },
+  { topic: "知识管理", text: "怎样设计一个更好的个人知识系统？" },
 ];
 
 type Draft = { x: number; y: number; position: { x: number; y: number } };
@@ -805,10 +805,10 @@ function CanvasWorkspace() {
             <div className="examples">
               <span>也可以从一个问题开始</span>
               <div className="example-grid">
-                {examples.map((text) => (
-                  <button className="example-card" key={text} onClick={() => createThought(text, viewportCenter().position)}>
+                {examples.map(({ topic, text }) => (
+                  <button className="example-card" key={topic} onClick={() => createThought(text, viewportCenter().position)}>
+                    <span>{topic}</span>
                     <strong>{text}</strong>
-                    <ChevronRight size={18} aria-hidden="true" />
                   </button>
                 ))}
               </div>
