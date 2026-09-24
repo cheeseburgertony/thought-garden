@@ -253,7 +253,7 @@ function CanvasWorkspace() {
 
     useCanvasStore.getState().addThoughts([root, ...branchNodes, ...nextNodes], edges);
     window.requestAnimationFrame(() => { void flow.fitView({ padding: 0.28, minZoom: 0.78, duration: 500 }); });
-    toast.message("示例画布已载入，可以拖动、编辑或撤销。", { icon: <Leaf size={15} /> });
+    toast.message("示例画布已载入，可以拖动、编辑或撤销。", { icon: <Leaf size={15} />, position: "top-center" });
   }, [flow, viewportCenter]);
 
   const openDraftAtCenter = useCallback(() => {
@@ -920,7 +920,7 @@ function CanvasWorkspace() {
         </div>
       )}
 
-      <Toaster position="bottom-center" theme={theme} closeButton={false} />
+      <Toaster position="bottom-center" theme={theme} closeButton={false} offset={{ top: 64 }} mobileOffset={{ top: 64 }} />
     </main>
   );
 }
