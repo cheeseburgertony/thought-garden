@@ -197,10 +197,9 @@ button { color: inherit; }
 .primary-button:hover { transform: translateY(-1px); background: var(--accent-deep); }
 .examples { display: flex; width: min(470px, 100%); align-items: stretch; flex-direction: column; gap: 9px; margin-top: 29px; pointer-events: auto; }
 .examples > span { color: var(--muted); font-size: 12px; text-align: center; }
-.example-grid { display: flex; flex-direction: column; gap: 0; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-solid); box-shadow: 0 6px 20px rgba(37, 45, 39, .045); }
-.example-card { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 13px; border: 0; border-bottom: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--text); cursor: pointer; text-align: left; transition: background .15s ease, color .15s ease; }
-.example-card:last-child { border-bottom: 0; }
-.example-card:hover { background: var(--accent-wash); }
+.example-grid { display: flex; width: 100%; flex-direction: column; gap: 5px; }
+.example-card { display: flex; min-height: 42px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 13px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-solid); color: var(--text); cursor: pointer; text-align: left; box-shadow: 0 2px 8px rgba(37, 45, 39, .035); transition: border-color .15s ease, background .15s ease, color .15s ease, transform .15s ease, box-shadow .15s ease; }
+.example-card:hover { transform: translateY(-1px); border-color: var(--line-strong); background: var(--surface-solid); box-shadow: 0 4px 12px rgba(37, 45, 39, .07); }
 .example-card strong { min-width: 0; color: var(--text); font-size: 14px; font-weight: 500; line-height: 1.5; transition: color .15s ease; }
 .example-card > svg { flex: none; color: var(--muted); opacity: .7; transition: color .15s ease, opacity .15s ease, transform .15s ease; }
 .example-card:hover strong, .example-card:hover > svg { color: var(--accent-deep); }
