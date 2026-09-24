@@ -308,7 +308,7 @@ button { color: inherit; }
 .summary-field-card:focus-within { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent); }
 .summary-field-card textarea { min-height: 76px; overflow: hidden; padding: 7px 1px 1px; border: 0; background: transparent; font-size: 14px; line-height: 1.7; }
 .summary-field-card textarea:focus { box-shadow: none; }
-.summary-field textarea { width: 100%; min-height: 54px; overflow: hidden; resize: none; border-radius: 8px; outline: 0; background: var(--canvas); color: var(--text); font-size: 14px; line-height: 1.65; }
+.summary-field textarea { width: 100%; min-height: 54px; overflow: hidden; resize: none; border-radius: 8px; outline: 0; background: transparent; color: var(--text); font-size: 14px; line-height: 1.65; }
 .summary-field textarea::placeholder { color: var(--subtle); }
 .summary-sources { display: grid; gap: 11px; padding: 14px 15px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--canvas) 72%, var(--surface-solid)); }
 .summary-sources-heading { display: flex; align-items: center; gap: 9px; color: var(--muted); }
