@@ -67,9 +67,9 @@ const nodeTypes = { thought: ThoughtNodeView };
 const INITIAL_SINGLE_NODE_ZOOM = 1.15;
 type AlignmentGuideStyle = { left: number; top: number; width?: number; height?: number };
 const examples = [
-  "我想做一个 AI 产品",
-  "未来三年我应该提升什么能力？",
-  "怎样设计一个更好的个人知识系统？",
+  { topic: "产品探索", text: "我想做一个 AI 产品" },
+  { topic: "个人成长", text: "未来三年我应该提升什么能力？" },
+  { topic: "知识管理", text: "怎样设计一个更好的个人知识系统？" },
 ];
 
 type Draft = { x: number; y: number; position: { x: number; y: number } };
@@ -210,6 +210,51 @@ function CanvasWorkspace() {
     const y = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
     return { screen: { x, y }, position: flow.screenToFlowPosition({ x, y }) };
   }, [flow]);
+
+  const loadExampleGarden = useCallback(() => {
+    const center = viewportCenter().position;
+    const rootId = nanoid();
+    const root: ThoughtNode = {
+      id: rootId,
+      type: "thought",
+      position: { x: center.x - 127, y: center.y - 48 },
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
+      data: { text: "怎样更扎实地学会一项新技能？", kind: "idea", depth: 0, createdBy: "user" },
+    };
+    const branches = [
+      { text: "先把目标设成看得见的成果", kind: "insight" as const },
+      { text: "每天的练习怎么做到足够小？", kind: "question" as const },
+      { text: "如何确认自己真的学会了？", kind: "question" as const },
+    ];
+    const branchPositions = fanOutPositions(root, branches.length, [root]);
+    const branchNodes: ThoughtNode[] = branches.map((branch, index) => ({
+      id: nanoid(),
+      type: "thought",
+      position: branchPositions[index],
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
+      data: { ...branch, depth: 1, parentId: rootId, createdBy: "ai" },
+    }));
+    const nextQuestions = ["能独立完成真实任务吗？", "隔一周还能复现关键步骤吗？"];
+    const nextPositions = fanOutPositions(branchNodes[2], nextQuestions.length, [root, ...branchNodes]);
+    const nextNodes: ThoughtNode[] = nextQuestions.map((text, index) => ({
+      id: nanoid(),
+      type: "thought",
+      position: nextPositions[index],
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
+      data: { text, kind: "question", depth: 2, parentId: branchNodes[2].id, createdBy: "ai" },
+    }));
+    const edges = [
+      ...branchNodes.map((node) => ({ id: nanoid(), source: rootId, target: node.id })),
+      ...nextNodes.map((node) => ({ id: nanoid(), source: branchNodes[2].id, target: node.id })),
+    ];
+
+    useCanvasStore.getState().addThoughts([root, ...branchNodes, ...nextNodes], edges);
+    window.requestAnimationFrame(() => { void flow.fitView({ padding: 0.28, minZoom: 0.78, duration: 500 }); });
+    toast.message("示例画布已载入，可以拖动、编辑或撤销。", { icon: <Leaf size={15} /> });
+  }, [flow, viewportCenter]);
 
   const openDraftAtCenter = useCallback(() => {
     const center = viewportCenter();
@@ -753,13 +798,23 @@ function CanvasWorkspace() {
         {nodes.length === 0 && !draft && (
           <section className="empty-state">
             <div className="empty-orbit"><span /><span /><span /><Leaf size={21} /></div>
-            <p className="eyebrow">A SPACE FOR YOUR THOUGHTS</p>
-            <h1>Thought Garden</h1>
-            <p className="empty-copy">种下一个想法，<br />看看它会长成什么。</p>
+            <p className="eyebrow">从一个念头开始</p>
+            <h1>让想法，长成一张思考地图</h1>
+            <p className="empty-copy">写下一个困惑，再沿着问题、风险和新视角继续探索。</p>
             <button className="primary-button" onClick={openDraftAtCenter}><Plus size={16} />写下第一个想法</button>
             <div className="examples">
-              <span>或者从这里开始</span>
-              {examples.map((example) => <button key={example} onClick={() => createThought(example, viewportCenter().position)}>{example}</button>)}
+              <span>或者，从一个真实问题开始</span>
+              <div className="example-grid">
+                {examples.map(({ topic, text }) => (
+                  <button className="example-card" key={topic} onClick={() => createThought(text, viewportCenter().position)}>
+                    <span>{topic}</span>
+                    <strong>{text}</strong>
+                  </button>
+                ))}
+              </div>
+              <button type="button" className="example-tour" onClick={loadExampleGarden}>
+                <Workflow size={14} />打开一张示例画布<span>先看看想法如何生长</span>
+              </button>
             </div>
           </section>
         )}
