@@ -1080,6 +1080,7 @@ function CanvasWorkspace() {
         <CanvasSummaryDialog
           nodes={nodes}
           edges={edges}
+          summaries={summaries}
           savedSummary={summary}
           onClose={() => setSummaryOpen(false)}
           onSave={saveSummary}
