@@ -2,6 +2,7 @@
 
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight, Check, ChevronLeft, CircleHelp, Compass, Footprints, Leaf, LoaderCircle, MousePointer2, Sparkles, Target, X } from "lucide-react";
+import { nanoid } from "nanoid";
 import { SummarizeRequestSchema, SummarizeResponseSchema } from "@/lib/schemas";
 import type { CanvasEdge, CanvasSummary, ThoughtNode } from "@/lib/types";
 
@@ -50,7 +51,12 @@ export default function CanvasSummaryDialog({
     draft.conclusion !== savedSummary.conclusion ||
     draft.nextAction !== savedSummary.nextAction ||
     questionsFromText(questionDraft).join("\n") !== savedSummary.openQuestions.join("\n") ||
-    draft.sourceNodeIds.join("\n") !== savedSummary.sourceNodeIds.join("\n")
+    draft.sourceNodeIds.join("\n") !== savedSummary.sourceNodeIds.join("\n") ||
+    draft.verifiedEvidence.join("\n") !== savedSummary.verifiedEvidence.join("\n") ||
+    draft.unverifiedAssumptions.join("\n") !== savedSummary.unverifiedAssumptions.join("\n") ||
+    draft.refutedClaims.join("\n") !== savedSummary.refutedClaims.join("\n") ||
+    draft.scope.type !== savedSummary.scope.type ||
+    draft.scope.nodeIds.join("\n") !== savedSummary.scope.nodeIds.join("\n")
   ));
 
   useLayoutEffect(() => {
@@ -79,11 +85,13 @@ export default function CanvasSummaryDialog({
         kind: node.data.kind,
         depth: node.data.depth,
         parentId: node.data.parentId && includedIds.has(node.data.parentId) ? node.data.parentId : undefined,
+        verification: node.data.verification,
       })),
       edges: edges
         .filter((edge) => includedIds.has(edge.source) && includedIds.has(edge.target))
         .slice(0, 200)
         .map(({ source, target }) => ({ source, target })),
+      completedActions: [],
     });
 
     if (!request.success) {
@@ -111,7 +119,25 @@ export default function CanvasSummaryDialog({
       const result = SummarizeResponseSchema.parse(body);
       const sourceNodeIds = result.sourceNodeIds.filter((id) => includedIds.has(id)).slice(0, 8);
       if (!sourceNodeIds.length) throw new Error("暂时无法对应到画布中的想法，请重新整理。");
-      setDraft({ ...result, sourceNodeIds, updatedAt: new Date().toISOString() });
+      const now = new Date().toISOString();
+      const byId = new Map(includedNodes.map((node) => [node.id, node]));
+      setDraft({
+        ...result,
+        id: nanoid(),
+        createdAt: now,
+        updatedAt: now,
+        scope: { type: scope, nodeIds: includedNodes.map(({ id }) => id) },
+        sourceNodeIds,
+        sourceSnapshots: sourceNodeIds.map((id) => {
+          const node = byId.get(id)!;
+          return {
+            id,
+            text: node.data.text,
+            kind: node.data.kind,
+            verificationStatus: node.data.verification?.status ?? "unverified",
+          };
+        }),
+      });
       setQuestionDraft(result.openQuestions.join("\n"));
       setStage("result");
     } catch (cause) {
@@ -145,9 +171,10 @@ export default function CanvasSummaryDialog({
         setError("先修正整理内容，再打开引用的想法。");
         return;
       }
-      saveDraft();
+      setError("先保存整理结果，再打开引用的想法。");
+      return;
     }
-    else onClose();
+    onClose();
     onFocusNode(id);
   }
 

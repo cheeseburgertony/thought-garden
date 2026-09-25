@@ -23,9 +23,11 @@ import { Command } from "cmdk";
 import {
   ArrowDownToLine,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Command as CommandIcon,
+  Copy,
   Expand,
   FileInput,
   FileJson,
@@ -39,6 +41,8 @@ import {
   MessageCircleQuestion,
   Moon,
   MousePointer2,
+  PanelsTopLeft,
+  Pencil,
   Plus,
   Redo2,
   Search,
@@ -52,13 +56,13 @@ import {
   X,
 } from "lucide-react";
 import { nanoid } from "nanoid";
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { Toaster, toast } from "sonner";
 import { alignThoughtNode, arrangeThoughtNodes, fanOutPositions } from "@/lib/canvas-layout";
 import { getDescendantIds, getHiddenNodeIds } from "@/lib/canvas-graph";
-import { downloadCanvas, loadCanvas, saveCanvas } from "@/lib/persistence";
-import { CanvasFileSchema, ExpandResponseSchema } from "@/lib/schemas";
-import { actionLabels, type CanvasSummary, type ThoughtAction, type ThoughtNode } from "@/lib/types";
+import { downloadCanvas, downloadWorkspace, loadWorkspace, normalizeImportedFile, saveWorkspace } from "@/lib/persistence";
+import { ExpandResponseSchema } from "@/lib/schemas";
+import { actionLabels, type CanvasBoard, type CanvasSummary, type ThoughtAction, type ThoughtNode } from "@/lib/types";
 import CanvasSummaryDialog from "@/components/canvas-summary-dialog";
 import ThoughtNodeView from "@/components/thought-node";
 import { useCanvasStore } from "@/store/canvas-store";
@@ -105,8 +109,13 @@ function CanvasWorkspace() {
   const edges = useCanvasStore((state) => state.edges);
   const viewport = useCanvasStore((state) => state.viewport);
   const theme = useCanvasStore((state) => state.theme);
-  const summary = useCanvasStore((state) => state.summary);
+  const canvases = useCanvasStore((state) => state.canvases);
+  const activeCanvasId = useCanvasStore((state) => state.activeCanvasId);
+  const summaries = useCanvasStore((state) => state.summaries);
+  const summary = summaries.at(-1) ?? null;
   const [hydrated, setHydrated] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"saved" | "error">("saved");
+  const [saveMessage, setSaveMessage] = useState("保存在此设备");
   const [draft, setDraft] = useState<Draft | null>(null);
   const [isCommandOpen, setCommandOpen] = useState(false);
   const [isSearchOpen, setSearchOpen] = useState(false);
@@ -115,6 +124,10 @@ function CanvasWorkspace() {
   const [running, setRunning] = useState<string | null>(null);
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
   const [guideOpen, setGuideOpen] = useState(false);
+  const [canvasMenuOpen, setCanvasMenuOpen] = useState(false);
+  const [canvasSearch, setCanvasSearch] = useState("");
+  const [renamingCanvasId, setRenamingCanvasId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
   const [spacePanActive, setSpacePanActive] = useState(false);
   const [alignmentGuides, setAlignmentGuides] = useState<{ horizontal?: AlignmentGuideStyle; vertical?: AlignmentGuideStyle }>({});
   const activeToolMode = spacePanActive ? "hand" : toolMode;
@@ -122,15 +135,56 @@ function CanvasWorkspace() {
   const draftRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const exportMenuRef = useRef<HTMLDetailsElement>(null);
+  const canvasMenuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const saveFailureShown = useRef(false);
+  const canAutoSave = useRef(true);
+  const viewportRef = useRef(viewport);
   const initialSingleNodeViewApplied = useRef(false);
   const collapsedBranchDrag = useRef<CollapsedBranchDrag | null>(null);
 
+  const activeCanvas = canvases.find((canvas) => canvas.id === activeCanvasId);
+  const visibleCanvases = useMemo(() => {
+    const term = canvasSearch.trim().toLocaleLowerCase();
+    return [...canvases]
+      .filter((canvas) => !term || canvas.name.toLocaleLowerCase().includes(term))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
+  }, [canvases, canvasSearch]);
+
   useEffect(() => {
-    const saved = loadCanvas();
-    if (saved) useCanvasStore.setState(saved);
-    const timer = window.setTimeout(() => setHydrated(true), 0);
+    const { workspace, saveError, canAutoSave: canSave } = loadWorkspace();
+    canAutoSave.current = canSave;
+    useCanvasStore.getState().hydrateWorkspace(workspace);
+    const timer = window.setTimeout(() => {
+      if (saveError) {
+        setSaveStatus("error");
+        setSaveMessage(saveError);
+      }
+      setHydrated(true);
+    }, 0);
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => { viewportRef.current = viewport; }, [viewport]);
+
+  useEffect(() => {
+    if (!hydrated || !activeCanvasId) return;
+    initialSingleNodeViewApplied.current = false;
+    void flow.setViewport(viewportRef.current, { duration: 0 });
+  }, [activeCanvasId, flow, hydrated]);
+
+  useEffect(() => {
+    if (!canvasMenuOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !canvasMenuRef.current?.contains(event.target)) setCanvasMenuOpen(false);
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
+  }, [canvasMenuOpen]);
+
+  useEffect(() => {
+    if (renamingCanvasId) renameInputRef.current?.focus();
+  }, [renamingCanvasId]);
 
   useEffect(() => {
     if (!hydrated || initialSingleNodeViewApplied.current) return;
@@ -176,13 +230,41 @@ function CanvasWorkspace() {
   useEffect(() => {
     if (!hydrated) return;
     let timer: ReturnType<typeof setTimeout>;
+    if (canAutoSave.current) {
+      try {
+        saveWorkspace(useCanvasStore.getState().getWorkspace());
+        saveFailureShown.current = false;
+        window.setTimeout(() => {
+          setSaveStatus("saved");
+          setSaveMessage("保存在此设备");
+        }, 0);
+      } catch (error) {
+        console.warn("Could not save Thought Garden workspace", error);
+        saveFailureShown.current = true;
+        window.setTimeout(() => {
+          setSaveStatus("error");
+          setSaveMessage("保存失败，请检查浏览器存储空间并导出备份。");
+          toast.error("保存失败，请检查浏览器存储空间并导出备份。");
+        }, 0);
+      }
+    }
     const unsubscribe = useCanvasStore.subscribe((state) => {
       clearTimeout(timer);
       timer = setTimeout(() => {
+        if (!canAutoSave.current) return;
         try {
-          saveCanvas({ nodes: state.nodes, edges: state.edges, viewport: state.viewport, summary: state.summary }, state.theme);
+          saveWorkspace(state.getWorkspace());
+          saveFailureShown.current = false;
+          setSaveStatus("saved");
+          setSaveMessage("保存在此设备");
         } catch (error) {
           console.warn("Could not save Thought Garden canvas", error);
+          setSaveStatus("error");
+          setSaveMessage("保存失败，请检查浏览器存储空间并导出备份。");
+          if (!saveFailureShown.current) {
+            toast.error("保存失败，请检查浏览器存储空间并导出备份。");
+            saveFailureShown.current = true;
+          }
         }
       }, 400);
     });
@@ -458,8 +540,14 @@ function CanvasWorkspace() {
   }, [flow]);
   const exportFile = useCallback(() => {
     const state = useCanvasStore.getState();
-    downloadCanvas({ nodes: state.nodes, edges: state.edges, viewport: state.viewport, summary: state.summary });
+    const board = state.canvases.find((canvas) => canvas.id === state.activeCanvasId);
+    if (!board) return;
+    downloadCanvas({ ...board, snapshot: { nodes: state.nodes, edges: state.edges, viewport: state.viewport, summaries: state.summaries, actions: state.actions } }, state.theme);
     toast.success("画布已导出");
+  }, []);
+  const exportAllCanvases = useCallback(() => {
+    downloadWorkspace(useCanvasStore.getState().getWorkspace());
+    toast.success("全部画布已备份");
   }, []);
   const exportImage = useCallback(async () => {
     const flowElement = canvasRef.current?.querySelector<HTMLElement>(".react-flow");
@@ -491,30 +579,55 @@ function CanvasWorkspace() {
   }, []);
 
   const clearCanvas = useCallback(() => {
-    if (useCanvasStore.getState().nodes.length && !window.confirm("清空这张思维画布？此操作可以撤销。")) return;
+    const state = useCanvasStore.getState();
+    if ((state.nodes.length || state.summaries.length || state.actions.length) && !window.confirm("清空这张思维画布？此操作可以撤销。")) return;
     useCanvasStore.getState().clearCanvas();
     void flow.setViewport({ x: 0, y: 0, zoom: 1 });
   }, [flow]);
 
+  const resetCanvasUi = useCallback(() => {
+    setDraft(null);
+    setSearch("");
+    setCanvasSearch("");
+    setCanvasMenuOpen(false);
+    setSummaryOpen(false);
+    setCommandOpen(false);
+    setSearchOpen(false);
+    setRunning(null);
+    setAlignmentGuides({});
+    initialSingleNodeViewApplied.current = false;
+  }, []);
+
   const importFile = useCallback(async (file?: File) => {
     if (!file) return;
     try {
-      const parsed = CanvasFileSchema.parse(JSON.parse(await file.text()));
-      const next = {
-        nodes: parsed.nodes.map((node) => ({ ...node, type: "thought" as const }) as ThoughtNode),
-        edges: parsed.edges,
-        viewport: parsed.viewport,
-        summary: parsed.summary ?? null,
-      };
-      useCanvasStore.getState().importCanvas(next);
-      if (parsed.theme) useCanvasStore.getState().setTheme(parsed.theme);
-      await flow.setViewport(next.viewport, { duration: 300 });
-      toast.success("画布已导入");
+      const imported = normalizeImportedFile(JSON.parse(await file.text()));
+      const state = useCanvasStore.getState();
+      if (imported.type === "workspace") {
+        if (state.canvases.length + imported.workspace.canvases.length > 100) {
+          toast.error("画布数量达到上限，请先整理现有画布后再导入。");
+          return;
+        }
+        resetCanvasUi();
+        canAutoSave.current = true;
+        state.mergeCanvases(imported.workspace.canvases, imported.workspace.activeCanvasId);
+        toast.success(`已合并导入 ${imported.workspace.canvases.length} 张画布`);
+      } else {
+        if (state.canvases.length >= 100) {
+          toast.error("画布数量达到上限，请先整理现有画布后再导入。");
+          return;
+        }
+        resetCanvasUi();
+        canAutoSave.current = true;
+        state.importCanvas(imported.board);
+        if (imported.theme) state.setTheme(imported.theme);
+        toast.success("已作为新画布导入，原画布保持不变");
+      }
     } catch (error) {
       console.error("[thought-garden] Invalid import file", error);
       toast.error("文件格式不正确，画布没有变化。");
     }
-  }, [flow]);
+  }, [resetCanvasUi]);
 
   const searchResults = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
@@ -529,10 +642,43 @@ function CanvasWorkspace() {
   }, [flow]);
 
   const saveSummary = useCallback((nextSummary: CanvasSummary) => {
-    useCanvasStore.getState().setSummary(nextSummary);
+    const added = useCanvasStore.getState().addSummary(nextSummary);
     setSummaryOpen(false);
-    toast.success("整理结果已保存");
+    toast.success(added ? "整理结果已保存" : "相同内容已保存过，本次没有重复记录");
   }, []);
+  const createCanvas = useCallback(() => {
+    resetCanvasUi();
+    useCanvasStore.getState().createCanvas();
+    setCanvasMenuOpen(false);
+  }, [resetCanvasUi]);
+  const beginRenameCanvas = useCallback((canvas: CanvasBoard) => {
+    setRenamingCanvasId(canvas.id);
+    setRenameDraft(canvas.name);
+  }, []);
+  const commitRenameCanvas = useCallback((event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (renamingCanvasId && renameDraft.trim()) {
+      useCanvasStore.getState().renameCanvas(renamingCanvasId, renameDraft);
+    }
+    setRenamingCanvasId(null);
+    setRenameDraft("");
+  }, [renameDraft, renamingCanvasId]);
+  const duplicateCanvas = useCallback((id: string) => {
+    const duplicateId = useCanvasStore.getState().duplicateCanvas(id);
+    if (!duplicateId) {
+      toast.error("画布数量已达到上限。");
+      return;
+    }
+    resetCanvasUi();
+    useCanvasStore.getState().switchCanvas(duplicateId);
+    setCanvasMenuOpen(false);
+    toast.success("画布副本已创建");
+  }, [resetCanvasUi]);
+  const switchCanvas = useCallback((id: string) => {
+    resetCanvasUi();
+    useCanvasStore.getState().switchCanvas(id);
+    setCanvasMenuOpen(false);
+  }, [resetCanvasUi]);
 
   const focusSummarySource = useCallback((id: string) => {
     const state = useCanvasStore.getState();
@@ -592,6 +738,7 @@ function CanvasWorkspace() {
       const mod = event.metaKey || event.ctrlKey;
       const interactive = target instanceof HTMLElement && target.closest("button, a, [role=button]");
       if (isSummaryOpen) return;
+      if (canvasMenuOpen && event.key === "Escape") { setCanvasMenuOpen(false); return; }
       if (event.code === "Space" && !event.repeat && !typing && !interactive && !isCommandOpen && !isSearchOpen && !mod && !event.altKey) {
         event.preventDefault();
         setSpacePanActive(true);
@@ -603,7 +750,7 @@ function CanvasWorkspace() {
       if (mod && event.key.toLowerCase() === "f") {
         event.preventDefault(); setCommandOpen(false); setSearchOpen(true); return;
       }
-      if (typing || isCommandOpen || isSearchOpen) {
+      if (typing || isCommandOpen || isSearchOpen || canvasMenuOpen) {
         if (event.key === "Escape") { setCommandOpen(false); setSearchOpen(false); setDraft(null); }
         return;
       }
@@ -639,7 +786,7 @@ function CanvasWorkspace() {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [isCommandOpen, isSearchOpen, isSummaryOpen, openDraftAtCenter, redo, undo]);
+  }, [canvasMenuOpen, isCommandOpen, isSearchOpen, isSummaryOpen, openDraftAtCenter, redo, undo]);
 
   if (!hydrated) return <main className="app-loading" aria-label="正在打开思维花园"><span className="brand-mark"><Leaf size={19} /></span></main>;
 
@@ -833,7 +980,66 @@ function CanvasWorkspace() {
         )}
 
         <header className="topbar">
-          <div className="brand-lockup"><span className="brand-mark"><Leaf size={17} strokeWidth={1.8} /></span><span>thought garden</span><span className="brand-divider" /><span className="brand-cn">思维花园</span></div>
+          <div className="brand-lockup">
+            <span className="brand-mark"><Leaf size={17} strokeWidth={1.8} /></span>
+            <span className="brand-en">thought garden</span>
+            <span className="brand-divider" />
+            <span className="brand-cn">思维花园</span>
+            <span className="brand-divider" />
+            <div className="canvas-switcher nopan nodrag" ref={canvasMenuRef}>
+              <button
+                type="button"
+                className="canvas-switcher-trigger"
+                aria-expanded={canvasMenuOpen}
+                aria-haspopup="dialog"
+                onClick={() => setCanvasMenuOpen((open) => !open)}
+                title="切换画布"
+              >
+                <PanelsTopLeft size={14} />
+                <span>{activeCanvas?.name ?? "我的画布"}</span>
+                <ChevronDown size={13} />
+              </button>
+              {canvasMenuOpen && (
+                <section className="canvas-switcher-menu" role="dialog" aria-label="画布管理">
+                  <header className="canvas-switcher-heading">
+                    <strong>你的画布</strong>
+                    <span>{canvases.length}/100</span>
+                  </header>
+                  <label className="canvas-switcher-search">
+                    <Search size={14} />
+                    <input value={canvasSearch} onChange={(event) => setCanvasSearch(event.target.value)} placeholder="搜索画布" aria-label="搜索画布" />
+                  </label>
+                  <div className="canvas-switcher-list">
+                    {visibleCanvases.map((canvas) => (
+                      <div className={`canvas-switcher-row${canvas.id === activeCanvasId ? " is-active" : ""}`} key={canvas.id}>
+                        {renamingCanvasId === canvas.id ? (
+                          <form className="canvas-rename-form" onSubmit={commitRenameCanvas}>
+                            <input ref={renameInputRef} value={renameDraft} maxLength={80} onChange={(event) => setRenameDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); setRenamingCanvasId(null); } }} aria-label="画布名称" />
+                            <button type="submit" disabled={!renameDraft.trim()} aria-label="保存画布名称"><Check size={14} /></button>
+                          </form>
+                        ) : (
+                          <>
+                            <button type="button" className="canvas-switcher-choice" onClick={() => switchCanvas(canvas.id)}>
+                              <span className="canvas-switcher-name">{canvas.name}</span>
+                              <small>{canvas.snapshot.nodes.length} 个想法 · {new Date(canvas.updatedAt).toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" })} 更新</small>
+                            </button>
+                            <div className="canvas-switcher-actions">
+                              <button type="button" onClick={() => beginRenameCanvas(canvas)} aria-label={`重命名${canvas.name}`} title="重命名"><Pencil size={13} /></button>
+                              <button type="button" onClick={() => duplicateCanvas(canvas.id)} aria-label={`复制${canvas.name}`} title="复制画布"><Copy size={13} /></button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                    {!visibleCanvases.length && <p className="canvas-switcher-empty">没有找到匹配的画布。</p>}
+                  </div>
+                  <button type="button" className="canvas-switcher-create" onClick={createCanvas} disabled={canvases.length >= 100}>
+                    <Plus size={15} />新建画布
+                  </button>
+                </section>
+              )}
+            </div>
+          </div>
           <div className="topbar-actions">
             <button className="icon-button" onClick={undo} data-tooltip="撤销 · ⌘Z" aria-label="撤销"><Undo2 size={16} /></button>
             <button className="icon-button" onClick={redo} data-tooltip="重做 · ⌘⇧Z" aria-label="重做"><Redo2 size={16} /></button>
@@ -849,6 +1055,9 @@ function CanvasWorkspace() {
                 <button className="export-menu-item" role="menuitem" onClick={() => { exportFile(); exportMenuRef.current?.removeAttribute("open"); }}>
                   <FileJson size={16} /><span>JSON 文件<small>备份或恢复画布</small></span>
                 </button>
+                <button className="export-menu-item" role="menuitem" onClick={() => { exportAllCanvases(); exportMenuRef.current?.removeAttribute("open"); }}>
+                  <PanelsTopLeft size={16} /><span>备份全部画布<small>导出整个工作区</small></span>
+                </button>
                 <button className="export-menu-item" role="menuitem" onClick={() => { void exportImage(); }}>
                   <ImageDown size={16} /><span>PNG 图片<small>下载当前视图</small></span>
                 </button>
@@ -860,7 +1069,9 @@ function CanvasWorkspace() {
           </div>
         </header>
 
-        <div className="canvas-status"><span className="save-dot" />保存在此设备</div>
+        <div className={`canvas-status${saveStatus === "error" ? " is-error" : ""}`} role="status">
+          <span className="save-dot" />{saveMessage}
+        </div>
       </div>
 
       <input ref={importRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={(event) => { void importFile(event.target.files?.[0]); event.target.value = ""; }} />
