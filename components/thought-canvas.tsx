@@ -406,6 +406,7 @@ function CanvasWorkspace() {
           depth: current.data.depth + 1,
           parentId: id,
           createdBy: "ai",
+          verification: { status: "unverified", note: "", updatedAt: new Date().toISOString() },
         },
       }));
       const nextEdges = nextNodes.map((node) => ({

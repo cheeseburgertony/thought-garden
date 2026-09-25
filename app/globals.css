@@ -108,6 +108,24 @@ button { color: inherit; }
 .thought-editor { display: block; width: 100%; min-height: 25px; margin-top: 12px; padding: 0; resize: none; overflow: hidden; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 16px; font-weight: 500; line-height: 1.58; letter-spacing: -.012em; white-space: pre-wrap; overflow-wrap: anywhere; }
 .thought-footer { display: flex; min-height: 18px; justify-content: flex-end; align-items: center; gap: 7px; margin-top: 8px; color: var(--subtle); font-size: 10px; }
 .thought-footer > span:not(.thinking-label):not(.mini-spinner) { padding: 3px 7px; border-radius: 999px; background: var(--node-tint); color: var(--muted); }
+.verification-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border: 0; border-radius: 999px; background: color-mix(in srgb, #b38c5d 12%, var(--surface-solid)); color: #95734c; cursor: pointer; font-size: 10px; line-height: 1.2; }
+.verification-badge.is-confirmed { background: color-mix(in srgb, #5b8d72 13%, var(--surface-solid)); color: #47765e; }
+.verification-badge.is-refuted { background: color-mix(in srgb, #b66f6a 13%, var(--surface-solid)); color: #a35e59; }
+.verification-badge:hover { filter: saturate(1.18); }
+.thought-verification-panel { display: grid; gap: 9px; margin-top: 10px; padding: 11px; border: 1px solid color-mix(in srgb, var(--node-accent) 22%, var(--line)); border-radius: 11px; background: color-mix(in srgb, var(--canvas) 80%, var(--surface-solid)); box-shadow: 0 4px 12px rgba(38, 45, 39, .045); }
+.verification-panel-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.verification-panel-heading span { color: var(--text); font-size: 11px; font-weight: 650; }
+.verification-panel-heading small, .verification-updated { color: var(--subtle); font-size: 9px; }
+.verification-field { display: grid; gap: 4px; color: var(--muted); font-size: 10px; font-weight: 550; }
+.verification-field select, .verification-field input, .verification-field textarea { width: 100%; min-width: 0; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; outline: 0; background: var(--surface-solid); color: var(--text); font: inherit; font-size: 11px; font-weight: 400; line-height: 1.5; }
+.verification-field textarea { resize: vertical; }
+.verification-field select:focus, .verification-field input:focus, .verification-field textarea:focus { border-color: color-mix(in srgb, var(--accent) 48%, var(--line)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 9%, transparent); }
+.verification-error { margin: 0; color: #ae625e; font-size: 10px; line-height: 1.45; }
+.verification-panel-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.verification-panel-actions button { min-height: 28px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-solid); color: var(--muted); cursor: pointer; font-size: 10px; }
+.verification-panel-actions .verification-save { border-color: var(--accent); background: var(--accent); color: white; }
+.verification-source { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-deep); font-size: 10px; text-decoration: none; }
+.verification-source:hover { text-decoration: underline; }
 .branch-toggle { display: inline-flex; min-height: 24px; flex: none; align-items: center; gap: 3px; padding: 4px 7px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--node-accent) 9%, transparent); color: var(--node-accent); cursor: pointer; line-height: 1; white-space: nowrap; transition: background .15s ease, transform .15s ease; }
 .branch-toggle:hover { background: color-mix(in srgb, var(--node-accent) 17%, transparent); transform: translateY(-1px); }
 .branch-toggle:active { transform: scale(.94); }

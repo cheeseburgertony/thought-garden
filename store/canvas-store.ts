@@ -38,7 +38,7 @@ type CanvasState = CanvasSnapshot & {
   addAction: (action: CanvasAction) => void;
   updateAction: (id: string, patch: Partial<CanvasAction>) => boolean;
   setActions: (actions: CanvasAction[]) => void;
-  updateVerification: (id: string, verification: ThoughtVerification) => void;
+  updateVerification: (id: string, verification: ThoughtVerification) => boolean;
   checkpoint: () => void;
   addThought: (node: ThoughtNode, edge?: CanvasEdge) => void;
   addThoughts: (nodes: ThoughtNode[], edges: CanvasEdge[]) => void;
@@ -299,6 +299,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     },
     setActions: (actions) => setSnapshot((snapshot) => ({ ...snapshot, actions })),
     updateVerification: (id, verification) => {
+      if (verification.status !== "unverified" && !verification.note.trim()) return false;
+      if (verification.sourceUrl && !/^https?:\/\//i.test(verification.sourceUrl)) return false;
+      if (!get().nodes.some((node) => node.id === id)) return false;
       checkpoint();
       setSnapshot((snapshot) => ({
         ...snapshot,
@@ -306,6 +309,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
           ? { ...node, data: { ...node.data, verification } }
           : node),
       }));
+      return true;
     },
     checkpoint,
     addThought: (node, edge) => {
