@@ -37,6 +37,7 @@ type CanvasState = CanvasSnapshot & {
   addSummary: (summary: CanvasSummary) => boolean;
   addAction: (action: CanvasAction) => void;
   updateAction: (id: string, patch: Partial<CanvasAction>) => boolean;
+  setActions: (actions: CanvasAction[]) => void;
   updateVerification: (id: string, verification: ThoughtVerification) => void;
   checkpoint: () => void;
   addThought: (node: ThoughtNode, edge?: CanvasEdge) => void;
@@ -72,6 +73,7 @@ function sameSummaryContent(left: CanvasSummary, right: CanvasSummary) {
     openQuestions: left.openQuestions,
     nextAction: left.nextAction,
     sourceNodeIds: left.sourceNodeIds,
+    actionObservations: left.actionObservations,
     verifiedEvidence: left.verifiedEvidence,
     unverifiedAssumptions: left.unverifiedAssumptions,
     refutedClaims: left.refutedClaims,
@@ -81,6 +83,7 @@ function sameSummaryContent(left: CanvasSummary, right: CanvasSummary) {
     openQuestions: right.openQuestions,
     nextAction: right.nextAction,
     sourceNodeIds: right.sourceNodeIds,
+    actionObservations: right.actionObservations,
     verifiedEvidence: right.verifiedEvidence,
     unverifiedAssumptions: right.unverifiedAssumptions,
     refutedClaims: right.refutedClaims,
@@ -92,6 +95,7 @@ function cleanSelection(snapshot: CanvasSnapshot): CanvasSnapshot {
     ...snapshot,
     nodes: snapshot.nodes.map((node) => ({ ...node, selected: false })),
     edges: snapshot.edges.map((edge) => ({ ...edge, selected: false })),
+    actions: snapshot.actions.map((action) => ({ ...action, selected: false })),
   };
 }
 
@@ -197,6 +201,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
             scope: { ...summary.scope, nodeIds: [...summary.scope.nodeIds] },
             sourceNodeIds: [...summary.sourceNodeIds],
             sourceSnapshots: summary.sourceSnapshots.map((item) => ({ ...item })),
+            actionObservations: summary.actionObservations.map((item) => ({ ...item })),
             openQuestions: [...summary.openQuestions],
             verifiedEvidence: [...summary.verifiedEvidence],
             unverifiedAssumptions: [...summary.unverifiedAssumptions],
@@ -207,6 +212,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
             id: actionIds.get(action.id)!,
             sourceSummaryId: summaryIds.get(action.sourceSummaryId) ?? action.sourceSummaryId,
             position: { ...action.position },
+            selected: false,
           })),
         },
       };
@@ -274,7 +280,15 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
     updateAction: (id, patch) => {
       const action = get().actions.find((item) => item.id === id);
       if (!action) return false;
-      const next = { ...action, ...patch };
+      const status = patch.status ?? action.status;
+      const outcome = patch.outcome ?? action.outcome;
+      if (status === "done" && !outcome.trim()) return false;
+      const next = {
+        ...action,
+        ...patch,
+        updatedAt: patch.updatedAt ?? new Date().toISOString(),
+        completedAt: status === "done" ? action.completedAt ?? new Date().toISOString() : undefined,
+      };
       if (next.status === "done" && !next.outcome.trim()) return false;
       checkpoint();
       setSnapshot((snapshot) => ({
@@ -283,6 +297,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       }));
       return true;
     },
+    setActions: (actions) => setSnapshot((snapshot) => ({ ...snapshot, actions })),
     updateVerification: (id, verification) => {
       checkpoint();
       setSnapshot((snapshot) => ({

@@ -4,7 +4,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpRight, Check, ChevronLeft, CircleHelp, Clock3, Compass, Footprints, History, Leaf, LoaderCircle, MousePointer2, RotateCcw, Sparkles, Target, X } from "lucide-react";
 import { nanoid } from "nanoid";
 import { SummarizeRequestSchema, SummarizeResponseSchema } from "@/lib/schemas";
-import type { CanvasEdge, CanvasSummary, ThoughtNode, VerificationStatus } from "@/lib/types";
+import type { CanvasAction, CanvasEdge, CanvasSummary, ThoughtNode, VerificationStatus } from "@/lib/types";
 
 type SummaryScope = "all" | "selected";
 type DialogStage = "scope" | "loading" | "result" | "history" | "history-detail" | "history-compare";
@@ -12,10 +12,13 @@ type DialogStage = "scope" | "loading" | "result" | "history" | "history-detail"
 type CanvasSummaryDialogProps = {
   nodes: ThoughtNode[];
   edges: CanvasEdge[];
+  actions: CanvasAction[];
   summaries: CanvasSummary[];
   savedSummary: CanvasSummary | null;
+  initialSummaryId?: string | null;
   onClose: () => void;
   onSave: (summary: CanvasSummary) => void;
+  onAddAction: (summaryId: string) => void;
   onFocusNode: (id: string) => void;
 };
 
@@ -30,18 +33,22 @@ function verificationLabel(status: VerificationStatus) {
 export default function CanvasSummaryDialog({
   nodes,
   edges,
+  actions,
   summaries,
   savedSummary,
+  initialSummaryId,
   onClose,
   onSave,
+  onAddAction,
   onFocusNode,
 }: CanvasSummaryDialogProps) {
   const selectedNodes = useMemo(() => nodes.filter((node) => node.selected), [nodes]);
   const [scope, setScope] = useState<SummaryScope>(selectedNodes.length ? "selected" : "all");
   const [scopeNodeIds, setScopeNodeIds] = useState<string[]>(selectedNodes.map(({ id }) => id));
   const selectedScopeNodes = useMemo(() => nodes.filter((node) => scopeNodeIds.includes(node.id)), [nodes, scopeNodeIds]);
-  const [stage, setStage] = useState<DialogStage>(savedSummary ? "result" : "scope");
-  const [historySummaryId, setHistorySummaryId] = useState<string | null>(null);
+  const initialHistoryId = initialSummaryId && initialSummaryId !== savedSummary?.id ? initialSummaryId : null;
+  const [stage, setStage] = useState<DialogStage>(initialHistoryId ? "history-detail" : savedSummary ? "result" : "scope");
+  const [historySummaryId, setHistorySummaryId] = useState<string | null>(initialHistoryId);
   const [draft, setDraft] = useState<CanvasSummary | null>(savedSummary);
   const [questionDraft, setQuestionDraft] = useState(savedSummary?.openQuestions.join("\n") ?? "");
   const [error, setError] = useState("");
@@ -75,6 +82,7 @@ export default function CanvasSummaryDialog({
     draft.nextAction !== savedSummary.nextAction ||
     questionsFromText(questionDraft).join("\n") !== savedSummary.openQuestions.join("\n") ||
     draft.sourceNodeIds.join("\n") !== savedSummary.sourceNodeIds.join("\n") ||
+    JSON.stringify(draft.actionObservations) !== JSON.stringify(savedSummary.actionObservations) ||
     draft.verifiedEvidence.join("\n") !== savedSummary.verifiedEvidence.join("\n") ||
     draft.unverifiedAssumptions.join("\n") !== savedSummary.unverifiedAssumptions.join("\n") ||
     draft.refutedClaims.join("\n") !== savedSummary.refutedClaims.join("\n") ||
@@ -86,6 +94,7 @@ export default function CanvasSummaryDialog({
   const chronologicalSummaries = useMemo(() => [...summaries].sort((left, right) => left.createdAt.localeCompare(right.createdAt)), [summaries]);
   const historyIndex = chronologicalSummaries.findIndex((summary) => summary.id === historySummaryId);
   const previousSummary = historyIndex > 0 ? chronologicalSummaries[historyIndex - 1] : null;
+  const linkedAction = actions.find((action) => action.sourceSummaryId === viewedSummary?.id || action.sourceSummaryId === savedSummary?.id);
 
   useLayoutEffect(() => {
     const fields = [conclusionRef.current, questionsRef.current, actionRef.current]
@@ -106,6 +115,13 @@ export default function CanvasSummaryDialog({
   async function generateSummary() {
     const includedNodes = scope === "selected" ? nodes.filter((node) => scopeNodeIds.includes(node.id)) : nodes;
     const includedIds = new Set(includedNodes.map((node) => node.id));
+    const relatedSummaryIds = new Set(summaries.filter((summary) => scope === "all"
+      || summary.sourceNodeIds.some((id) => includedIds.has(id))
+      || summary.scope.nodeIds.some((id) => includedIds.has(id))).map(({ id }) => id));
+    const completedActions = actions
+      .filter((action) => action.status === "done" && action.outcome.trim() && relatedSummaryIds.has(action.sourceSummaryId))
+      .slice(-100)
+      .map(({ id, sourceSummaryId, text, outcome }) => ({ id, sourceSummaryId, text, outcome }));
     const request = SummarizeRequestSchema.safeParse({
       nodes: includedNodes.map((node) => ({
         id: node.id,
@@ -119,7 +135,7 @@ export default function CanvasSummaryDialog({
         .filter((edge) => includedIds.has(edge.source) && includedIds.has(edge.target))
         .slice(0, 200)
         .map(({ source, target }) => ({ source, target })),
-      completedActions: [],
+      completedActions,
     });
 
     if (!request.success) {
@@ -165,6 +181,11 @@ export default function CanvasSummaryDialog({
             verificationStatus: node.data.verification?.status ?? "unverified",
           };
         }),
+        actionObservations: request.data.completedActions.map((action) => ({
+          actionId: action.id,
+          text: action.text,
+          outcome: action.outcome,
+        })),
       });
       setQuestionDraft(result.openQuestions.join("\n"));
       setStage("result");
@@ -330,6 +351,7 @@ export default function CanvasSummaryDialog({
             <section className="summary-readonly-field"><span>结论</span><p>{viewedSummary.conclusion}</p></section>
             <section className="summary-readonly-field"><span>待解决</span>{viewedSummary.openQuestions.length ? <ul>{viewedSummary.openQuestions.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul> : <p>暂无待解决问题</p>}</section>
             <section className="summary-readonly-field"><span>下一步行动</span><p>{viewedSummary.nextAction}</p></section>
+            {viewedSummary.actionObservations.length > 0 && <section className="summary-readonly-field summary-action-observations"><span>真实行动观察 · 用户记录</span><ul>{viewedSummary.actionObservations.map((item) => <li key={item.actionId}><strong>{item.text}</strong><p>{item.outcome}</p></li>)}</ul></section>}
             {(viewedSummary.verifiedEvidence.length > 0 || viewedSummary.unverifiedAssumptions.length > 0 || viewedSummary.refutedClaims.length > 0) && (
               <div className="summary-validation-groups">
                 {[
@@ -362,6 +384,7 @@ export default function CanvasSummaryDialog({
               ["结论", previousSummary.conclusion, viewedSummary.conclusion],
               ["待解决", previousSummary.openQuestions.join("\n") || "暂无", viewedSummary.openQuestions.join("\n") || "暂无"],
               ["下一步行动", previousSummary.nextAction, viewedSummary.nextAction],
+              ["真实行动观察", previousSummary.actionObservations.map((item) => `${item.text}：${item.outcome}`).join("\n") || "暂无", viewedSummary.actionObservations.map((item) => `${item.text}：${item.outcome}`).join("\n") || "暂无"],
             ].map(([label, before, after]) => (
               <section className={`summary-compare-row${before === after ? " is-same" : " is-changed"}`} key={label}>
                 <div><strong>{label}</strong><small>{before === after ? "没有变化" : "内容有调整"}</small></div>
@@ -436,6 +459,8 @@ export default function CanvasSummaryDialog({
               </div>
             )}
 
+            {draft.actionObservations.length > 0 && <section className="summary-action-observations"><div><strong>真实行动观察</strong><span>仅来自你记录的已完成行动，不是 AI 推测</span></div><ul>{draft.actionObservations.map((item) => <li key={item.actionId}><strong>{item.text}</strong><p>{item.outcome}</p></li>)}</ul></section>}
+
             <div className="summary-sources">
               <div className="summary-sources-heading">
                 <span className="summary-sources-mark"><Target size={14} /></span>
@@ -492,6 +517,7 @@ export default function CanvasSummaryDialog({
               ? <p className="summary-updated">上次保存于 {new Date(savedSummary.updatedAt).toLocaleString("zh-CN", { dateStyle: "medium", timeStyle: "short" })}</p>
               : <p className="summary-updated">保存后可随时从画布工具栏继续查看</p>}
             <div className="summary-dialog-actions">
+              {savedSummary && draft.id === savedSummary.id && !isDirty && <button type="button" className="summary-secondary-button" onClick={() => onAddAction(savedSummary.id)}>{linkedAction?.sourceSummaryId === savedSummary.id ? "定位行动" : "加入画布"}</button>}
               <button type="button" className="summary-secondary-button" onClick={() => { setStage("scope"); setError(""); }}>
                 <ChevronLeft size={14} />重新整理
               </button>
@@ -514,6 +540,7 @@ export default function CanvasSummaryDialog({
             <button type="button" className="summary-secondary-button" onClick={() => setStage("history")}><ChevronLeft size={14} />历史列表</button>
             <div className="summary-dialog-actions">
               {previousSummary && <button type="button" className="summary-secondary-button" onClick={() => setStage("history-compare")}>与前一版对比</button>}
+              <button type="button" className="summary-secondary-button" onClick={() => onAddAction(viewedSummary.id)}>{linkedAction?.sourceSummaryId === viewedSummary.id ? "定位行动" : "加入画布"}</button>
               <button type="button" className="summary-primary-button" onClick={continueFromHistory}><RotateCcw size={14} />基于此版继续</button>
             </div>
           </footer>

@@ -65,6 +65,7 @@ function legacySummaryToHistory(
         verificationStatus: node?.data.verification?.status ?? "unverified",
       };
     }),
+    actionObservations: [],
     verifiedEvidence: [],
     unverifiedAssumptions: [],
     refutedClaims: [],
@@ -104,6 +105,7 @@ function cloneBoardWithFreshReferences(board: CanvasBoard, name = board.name, id
       scope: { ...summary.scope, nodeIds: [...summary.scope.nodeIds] },
       sourceNodeIds: [...summary.sourceNodeIds],
       sourceSnapshots: summary.sourceSnapshots.map((source) => ({ ...source })),
+      actionObservations: summary.actionObservations.map((observation) => ({ ...observation })),
       openQuestions: [...summary.openQuestions],
       verifiedEvidence: [...summary.verifiedEvidence],
       unverifiedAssumptions: [...summary.unverifiedAssumptions],

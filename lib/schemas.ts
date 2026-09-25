@@ -61,6 +61,12 @@ const SummarySourceSnapshotSchema = z.object({
   verificationStatus: VerificationStatusSchema,
 });
 
+const ActionObservationSnapshotSchema = z.object({
+  actionId: z.string().min(1),
+  text: z.string().trim().min(1).max(300),
+  outcome: z.string().trim().min(1).max(1200),
+});
+
 export const CanvasSummarySchema = z.object({
   id: z.string().min(1),
   createdAt: z.string().datetime(),
@@ -72,6 +78,7 @@ export const CanvasSummarySchema = z.object({
   nextAction: z.string().trim().min(1).max(300),
   sourceNodeIds: z.array(z.string().min(1)).max(12),
   sourceSnapshots: z.array(SummarySourceSnapshotSchema).max(12),
+  actionObservations: z.array(ActionObservationSnapshotSchema).max(100).default([]),
   verifiedEvidence: z.array(z.string().trim().min(1).max(180)).max(5),
   unverifiedAssumptions: z.array(z.string().trim().min(1).max(180)).max(5),
   refutedClaims: z.array(z.string().trim().min(1).max(180)).max(5),

@@ -62,12 +62,13 @@ import { alignThoughtNode, arrangeThoughtNodes, fanOutPositions } from "@/lib/ca
 import { getDescendantIds, getHiddenNodeIds } from "@/lib/canvas-graph";
 import { downloadCanvas, downloadWorkspace, loadWorkspace, normalizeImportedFile, saveWorkspace } from "@/lib/persistence";
 import { ExpandResponseSchema } from "@/lib/schemas";
-import { actionLabels, type CanvasBoard, type CanvasSummary, type ThoughtAction, type ThoughtNode } from "@/lib/types";
+import { actionLabels, type ActionCardNode, type CanvasAction, type CanvasBoard, type CanvasFlowNode, type CanvasSummary, type ThoughtAction, type ThoughtNode } from "@/lib/types";
+import ActionCardView from "@/components/action-card";
 import CanvasSummaryDialog from "@/components/canvas-summary-dialog";
 import ThoughtNodeView from "@/components/thought-node";
 import { useCanvasStore } from "@/store/canvas-store";
 
-const nodeTypes = { thought: ThoughtNodeView };
+const nodeTypes = { thought: ThoughtNodeView, action: ActionCardView };
 const INITIAL_SINGLE_NODE_ZOOM = 1.15;
 type AlignmentGuideStyle = { left: number; top: number; width?: number; height?: number };
 const examples = [
@@ -104,9 +105,10 @@ function CanvasBackground() {
 }
 
 function CanvasWorkspace() {
-  const flow = useReactFlow<ThoughtNode>();
+  const flow = useReactFlow<CanvasFlowNode>();
   const nodes = useCanvasStore((state) => state.nodes);
   const edges = useCanvasStore((state) => state.edges);
+  const actions = useCanvasStore((state) => state.actions);
   const viewport = useCanvasStore((state) => state.viewport);
   const theme = useCanvasStore((state) => state.theme);
   const canvases = useCanvasStore((state) => state.canvases);
@@ -120,8 +122,10 @@ function CanvasWorkspace() {
   const [isCommandOpen, setCommandOpen] = useState(false);
   const [isSearchOpen, setSearchOpen] = useState(false);
   const [isSummaryOpen, setSummaryOpen] = useState(false);
+  const [summaryInitialId, setSummaryInitialId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [running, setRunning] = useState<string | null>(null);
+  const [actionMeasurements, setActionMeasurements] = useState<Record<string, { width: number; height: number }>>({});
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
   const [guideOpen, setGuideOpen] = useState(false);
   const [canvasMenuOpen, setCanvasMenuOpen] = useState(false);
@@ -142,6 +146,11 @@ function CanvasWorkspace() {
   const viewportRef = useRef(viewport);
   const initialSingleNodeViewApplied = useRef(false);
   const collapsedBranchDrag = useRef<CollapsedBranchDrag | null>(null);
+
+  const openSummaryVersion = useCallback((summaryId: string) => {
+    setSummaryInitialId(summaryId);
+    setSummaryOpen(true);
+  }, []);
 
   const activeCanvas = canvases.find((canvas) => canvas.id === activeCanvasId);
   const visibleCanvases = useMemo(() => {
@@ -412,11 +421,25 @@ function CanvasWorkspace() {
   }, [running]);
 
   const hiddenNodeIds = useMemo(() => getHiddenNodeIds(nodes, edges), [nodes, edges]);
-  const flowNodes = useMemo(() => nodes.map((node) => ({
+  const thoughtFlowNodes = useMemo(() => nodes.map((node) => ({
     ...node,
     hidden: hiddenNodeIds.has(node.id),
     data: { ...node.data, busy: running === node.id, onAction: runAction },
   })), [hiddenNodeIds, nodes, runAction, running]);
+  const actionFlowNodes = useMemo(() => actions.map((action): ActionCardNode => ({
+    id: action.id,
+    type: "action",
+    position: action.position,
+    measured: actionMeasurements[action.id],
+    selectable: false,
+    draggable: true,
+    data: {
+      action,
+      sourceAvailable: summaries.some((item) => item.id === action.sourceSummaryId),
+      onOpenSummary: openSummaryVersion,
+    },
+  })), [actionMeasurements, actions, openSummaryVersion, summaries]);
+  const flowNodes = useMemo<CanvasFlowNode[]>(() => [...thoughtFlowNodes, ...actionFlowNodes], [actionFlowNodes, thoughtFlowNodes]);
   const compactConnections = nodes.length - hiddenNodeIds.size >= 14;
   const flowEdges = useMemo(() => edges.map((edge) => ({
     ...edge,
@@ -452,7 +475,11 @@ function CanvasWorkspace() {
     return aligned;
   }, [flow]);
 
-  const handleNodeDrag = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
+  const handleNodeDrag = useCallback<OnNodeDrag<CanvasFlowNode>>((_, node) => {
+    if (node.type === "action") {
+      setAlignmentGuides({});
+      return;
+    }
     const aligned = alignDraggedNode(node);
     const bounds = canvasRef.current?.getBoundingClientRect();
 
@@ -490,9 +517,9 @@ function CanvasWorkspace() {
     }
 
   }, [alignDraggedNode, flow]);
-  const handleNodeDragStop = useCallback<OnNodeDrag<ThoughtNode>>((_, node) => {
+  const handleNodeDragStop = useCallback<OnNodeDrag<CanvasFlowNode>>((_, node) => {
     setAlignmentGuides({});
-    alignDraggedNode(node);
+    if (node.type === "thought") alignDraggedNode(node);
     collapsedBranchDrag.current = null;
   }, [alignDraggedNode]);
 
@@ -591,6 +618,7 @@ function CanvasWorkspace() {
     setCanvasSearch("");
     setCanvasMenuOpen(false);
     setSummaryOpen(false);
+    setSummaryInitialId(null);
     setCommandOpen(false);
     setSearchOpen(false);
     setRunning(null);
@@ -644,8 +672,53 @@ function CanvasWorkspace() {
   const saveSummary = useCallback((nextSummary: CanvasSummary) => {
     const added = useCanvasStore.getState().addSummary(nextSummary);
     setSummaryOpen(false);
+    setSummaryInitialId(null);
     toast.success(added ? "整理结果已保存" : "相同内容已保存过，本次没有重复记录");
   }, []);
+  const addActionFromSummary = useCallback((summaryId: string) => {
+    const state = useCanvasStore.getState();
+    const existing = state.actions.find((action) => action.sourceSummaryId === summaryId);
+    if (existing) {
+      void flow.setCenter(existing.position.x + 155, existing.position.y + 130, { zoom: 1.05, duration: 450 });
+      toast.message("已定位到这份整理对应的行动");
+      setSummaryOpen(false);
+      setSummaryInitialId(null);
+      return;
+    }
+    const summaryItem = state.summaries.find((item) => item.id === summaryId);
+    if (!summaryItem) {
+      toast.error("这份整理已不可用，暂时无法创建行动。");
+      return;
+    }
+
+    const center = viewportCenter().position;
+    const x = center.x - 155;
+    let y = center.y - 125;
+    const overlapsThought = (candidateY: number) => state.nodes.some((node) => {
+      const nodeWidth = node.measured?.width ?? 254;
+      const nodeHeight = node.measured?.height ?? 150;
+      return x < node.position.x + nodeWidth + 28 && x + 310 > node.position.x - 28
+        && candidateY < node.position.y + nodeHeight + 28 && candidateY + 280 > node.position.y - 28;
+    });
+    let attempts = 0;
+    while (overlapsThought(y) && attempts < 12) { y += 310; attempts += 1; }
+    const now = new Date().toISOString();
+    const action: CanvasAction = {
+      id: nanoid(),
+      sourceSummaryId: summaryId,
+      text: summaryItem.nextAction,
+      status: "todo",
+      outcome: "",
+      position: { x, y },
+      createdAt: now,
+      updatedAt: now,
+    };
+    state.addAction(action);
+    setSummaryOpen(false);
+    setSummaryInitialId(null);
+    window.requestAnimationFrame(() => void flow.setCenter(x + 155, y + 140, { zoom: 1.05, duration: 450 }));
+    toast.success("行动卡已加入画布");
+  }, [flow, viewportCenter]);
   const createCanvas = useCallback(() => {
     resetCanvasUi();
     useCanvasStore.getState().createCanvas();
@@ -721,7 +794,7 @@ function CanvasWorkspace() {
       case "challenge": { const node = getSelectedNode(); if (node) void runAction(node.id, "challenge"); break; }
       case "risk": { const node = getSelectedNode(); if (node) void runAction(node.id, "risk"); break; }
       case "delete": useCanvasStore.getState().removeSelection(); break;
-      case "summary": setSummaryOpen(true); break;
+      case "summary": setSummaryInitialId(null); setSummaryOpen(true); break;
       case "export": exportFile(); break;
       case "import": importRef.current?.click(); break;
       case "clear": clearCanvas(); break;
@@ -808,7 +881,31 @@ function CanvasWorkspace() {
           elementsSelectable={activeToolMode !== "hand"}
           zoomOnScroll={activeToolMode !== "hand" && hasSelection}
           panOnScroll={activeToolMode === "hand" || !hasSelection}
-          onNodesChange={(changes: NodeChange<ThoughtNode>[]) => useCanvasStore.getState().setNodes(applyNodeChanges(changes, useCanvasStore.getState().nodes))}
+          onNodesChange={(changes: NodeChange<CanvasFlowNode>[]) => {
+            const state = useCanvasStore.getState();
+            const next = applyNodeChanges(changes, flowNodes);
+            state.setNodes(next.filter((node): node is ThoughtNode => node.type === "thought"));
+            const actionIds = new Set(state.actions.map(({ id }) => id));
+            const changedActionIds = changes
+              .filter((change): change is Extract<NodeChange<CanvasFlowNode>, { id: string }> => "id" in change && actionIds.has(change.id))
+              .map(({ id }) => id);
+            if (changedActionIds.length) {
+              const changedActionNodes = new Map(next
+                .filter((node): node is ActionCardNode => node.type === "action" && changedActionIds.includes(node.id))
+                .filter((node): node is ActionCardNode & { measured: { width: number; height: number } } => Boolean(node.measured?.width && node.measured.height))
+                .map((node) => [node.id, { width: node.measured!.width, height: node.measured!.height }]));
+              if (changedActionNodes.size) {
+                setActionMeasurements((current) => ({ ...current, ...Object.fromEntries(changedActionNodes) }));
+              }
+            }
+            if (changes.some((change) => "id" in change && change.type === "position" && actionIds.has(change.id))) {
+              const actionsById = new Map(state.actions.map((action) => [action.id, action]));
+              state.setActions(next.filter((node): node is ActionCardNode => node.type === "action").map((node) => ({
+                ...actionsById.get(node.id)!,
+                position: node.position,
+              })));
+            }
+          }}
           onEdgesChange={(changes: EdgeChange[]) => useCanvasStore.getState().setEdges(applyEdgeChanges(changes, useCanvasStore.getState().edges))}
           onConnect={(connection: Connection) => {
             const edge = addEdge({ ...connection, id: nanoid(), type: "default" }, useCanvasStore.getState().edges);
@@ -817,7 +914,7 @@ function CanvasWorkspace() {
           onNodeDragStart={(_, node) => {
             const state = useCanvasStore.getState();
             state.checkpoint();
-            const descendants = node.data.collapsed ? getDescendantIds(node.id, state.edges) : new Set<string>();
+            const descendants = node.type === "thought" && node.data.collapsed ? getDescendantIds(node.id, state.edges) : new Set<string>();
             const positions = new Map(state.nodes
               .filter((item) => descendants.has(item.id))
               .map((item) => [item.id, item.position]));
@@ -920,7 +1017,7 @@ function CanvasWorkspace() {
             aria-label={summary ? "查看思路整理结果" : "整理思路"}
             title={summary ? "查看思路整理结果" : "从想法中提炼结论和下一步"}
             disabled={!nodes.length && !summary}
-            onClick={() => setSummaryOpen(true)}
+            onClick={() => { setSummaryInitialId(null); setSummaryOpen(true); }}
           >
             <ListChecks size={16} strokeWidth={1.8} />
             <span>{summary ? "查看总结" : "思路整理"}</span>
@@ -1080,10 +1177,13 @@ function CanvasWorkspace() {
         <CanvasSummaryDialog
           nodes={nodes}
           edges={edges}
+          actions={actions}
           summaries={summaries}
           savedSummary={summary}
-          onClose={() => setSummaryOpen(false)}
+          initialSummaryId={summaryInitialId}
+          onClose={() => { setSummaryOpen(false); setSummaryInitialId(null); }}
           onSave={saveSummary}
+          onAddAction={addActionFromSummary}
           onFocusNode={focusSummarySource}
         />
       )}

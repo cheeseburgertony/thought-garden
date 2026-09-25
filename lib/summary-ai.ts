@@ -7,7 +7,9 @@ const systemPrompt = `你是一个帮助用户收束思路的助手。用户提�
 请严格依据给出的内容整理，不要添加画布里没有的事实。返回严格 JSON 对象，格式为：
 {"conclusion":"当前可以得出的阶段性结论","openQuestions":["仍待确认的问题"],"nextAction":"下一步最小且可执行的行动","sourceNodeIds":["支撑结论或行动的想法 ID"]}
 
-结论应简洁、具体，并体现画布中已经形成的判断；若证据不足，明确保留不确定性。待确认问题可为空，最多 5 条。下一步行动只给一件可以开始做的小事。引用 1–8 个实际提供的想法 ID；不要编造 ID。只输出 JSON，不要 Markdown。`;
+结论应简洁、具体，并体现画布中已经形成的判断；若证据不足，明确保留不确定性。待确认问题可为空，最多 5 条。下一步行动只给一件可以开始做的小事。引用 1–8 个实际提供的想法 ID；不要编造 ID。
+
+completedActions 中的 outcome 是用户记录的真实执行结果或观察；只能依据这些原文讨论行动结果，不得补写、推测或把未完成行动说成已经发生。没有提供的结果必须保持未知。把观察与推论清楚区分。只输出 JSON，不要 Markdown。`;
 
 export async function summarizeThoughts(input: unknown) {
   const request = SummarizeRequestSchema.parse(input);

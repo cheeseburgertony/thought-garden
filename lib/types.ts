@@ -39,6 +39,12 @@ export type SummarySourceSnapshot = {
   verificationStatus: VerificationStatus;
 };
 
+export type ActionObservationSnapshot = {
+  actionId: string;
+  text: string;
+  outcome: string;
+};
+
 export type CanvasSummary = {
   id: string;
   createdAt: string;
@@ -50,6 +56,7 @@ export type CanvasSummary = {
   nextAction: string;
   sourceNodeIds: string[];
   sourceSnapshots: SummarySourceSnapshot[];
+  actionObservations: ActionObservationSnapshot[];
   verifiedEvidence: string[];
   unverifiedAssumptions: string[];
   refutedClaims: string[];
@@ -67,7 +74,17 @@ export type CanvasAction = {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  selected?: boolean;
 };
+
+export type ActionCardNodeData = {
+  action: CanvasAction;
+  sourceAvailable: boolean;
+  onOpenSummary: (summaryId: string) => void;
+};
+
+export type ActionCardNode = Node<ActionCardNodeData, "action">;
+export type CanvasFlowNode = ThoughtNode | ActionCardNode;
 
 export type CanvasSnapshot = {
   nodes: ThoughtNode[];
