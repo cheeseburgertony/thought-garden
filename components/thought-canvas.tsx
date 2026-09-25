@@ -1233,7 +1233,7 @@ function CanvasWorkspace() {
         </div>
       )}
 
-      <Toaster position="bottom-center" theme={theme} closeButton={false} offset={{ top: 64 }} mobileOffset={{ top: 64 }} />
+      <Toaster position="top-center" theme={theme} closeButton={false} offset={{ top: 64 }} mobileOffset={{ top: 64 }} />
     </main>
   );
 }
