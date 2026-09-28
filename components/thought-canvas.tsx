@@ -285,14 +285,19 @@ function CanvasWorkspace() {
   }, [draft]);
 
   const createThought = useCallback((text: string, point: { x: number; y: number }) => {
+    const isFirstThought = useCanvasStore.getState().nodes.length === 0;
     const node: ThoughtNode = {
       id: nanoid(),
       type: "thought",
       position: { x: point.x - 127, y: point.y - 48 },
+      selected: isFirstThought,
       data: { text, kind: "idea", depth: 0, createdBy: "user" },
     };
     useCanvasStore.getState().addThought(node);
     setDraft(null);
+    if (isFirstThought) {
+      toast.message("试试节点上方的「深挖」补细节，或「展开」找新方向。", { icon: <Leaf size={15} />, position: "top-center" });
+    }
   }, []);
 
   const viewportCenter = useCallback(() => {
@@ -954,17 +959,19 @@ function CanvasWorkspace() {
               <header className="guide-panel-header">
                 <div className="guide-panel-heading">
                   <span className="guide-panel-mark"><Leaf size={15} /></span>
-                  <div><strong id="thought-guide-title">使用指南</strong><span>让想法从不同方向生长</span></div>
+                  <div><strong id="thought-guide-title">使用指南</strong><span>把模糊念头逐步说清楚</span></div>
                 </div>
                 <button type="button" className="guide-toggle is-close" onClick={() => setGuideOpen(false)} aria-label="收起使用指南" aria-expanded={true} title="收起使用指南">
                   <ChevronLeft size={17} />
                 </button>
               </header>
               <div className="guide-intro">
-                <strong>这个项目是做什么的？</strong>
-                <p>思维花园是一张 AI 驱动的无限思维画布。从一个问题或念头出发，逐步展开分支、连接想法。</p>
-                <strong>它想解决什么？</strong>
-                <p>减少灵感散落难回看、思考停在第一层、观点关系不清的问题，也帮你补充反例与风险。</p>
+                <strong>1. 写下还说不清的问题或观点</strong>
+                <p>不用先想完整，先把现在最模糊的一点放进画布。</p>
+                <strong>2. 选中节点，用上方操作继续追问</strong>
+                <p>「深挖」补细节，「展开」找方向；「反驳」和「风险」帮你检查盲点。</p>
+                <strong>3. 收束成阶段性判断</strong>
+                <p>用「思路整理」归纳结论、待确认的问题和下一步。</p>
               </div>
               <div className="guide-list">
                 {thoughtGuides.map(({ action, icon: Icon, description }) => (
@@ -1041,14 +1048,14 @@ function CanvasWorkspace() {
         </div>
 
         {nodes.length === 0 && !draft && (
-          <section className="empty-state">
+          <section className={`empty-state${guideOpen ? " guide-open" : ""}`}>
             <div className="empty-orbit"><span /><span /><span /><Leaf size={21} /></div>
-            <p className="eyebrow">从一个念头开始</p>
-            <h1>让想法，长成一张思考地图</h1>
-            <p className="empty-copy">写下一个困惑，再沿着问题、风险和新视角继续探索。</p>
-            <button className="primary-button" onClick={openDraftAtCenter}><Plus size={16} />写下第一个想法</button>
+            <p className="eyebrow">从一个说不清的念头开始</p>
+            <h1>把模糊的问题，一步步想清楚</h1>
+            <p className="empty-copy">先写下一个不完整的问题或观点，再用「深挖」补细节、「展开」找方向。</p>
+            <button className="primary-button" onClick={openDraftAtCenter}><Plus size={16} />写下一个念头</button>
             <div className="examples">
-              <span>也可以从一个问题开始</span>
+              <span>不知从哪儿开始？选一个问题试试</span>
               <div className="example-grid">
                 {examples.map(({ topic, text }) => (
                   <button className="example-card" key={topic} onClick={() => createThought(text, viewportCenter().position)}>
@@ -1071,9 +1078,9 @@ function CanvasWorkspace() {
             onSubmit={(event) => { event.preventDefault(); const text = draftRef.current?.value.trim(); if (text) createThought(text, draft.position); }}
             onKeyDown={(event) => { if (event.key === "Escape") setDraft(null); event.stopPropagation(); }}
           >
-            <input ref={draftRef} maxLength={1600} placeholder="写下一个想法…" aria-label="写下一个想法" />
+            <input ref={draftRef} maxLength={1600} placeholder="写下一个模糊的问题或观点…" aria-label="写下一个模糊的问题或观点" />
             <button type="submit" aria-label="创建想法"><ArrowDownToLine size={17} /></button>
-            <span>Enter 创建 · Esc 取消</span>
+            <span>不必先想完整 · Enter 创建 · Esc 取消</span>
           </form>
         )}
 

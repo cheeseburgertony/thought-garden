@@ -262,6 +262,7 @@ button { color: inherit; }
 .export-menu-item small { color: var(--subtle); font-size: 9px; }
 
 .empty-state { position: absolute; z-index: 1; top: 50%; left: 50%; display: flex; width: min(860px, calc(100vw - 40px)); align-items: center; flex-direction: column; transform: translate(-50%, -51%); pointer-events: none; text-align: center; }
+.empty-state.guide-open { left: calc(50% + 157px); width: min(860px, calc(100vw - 346px)); }
 .empty-orbit { position: relative; display: grid; width: 48px; height: 48px; place-items: center; margin-bottom: 17px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--accent); box-shadow: 0 8px 25px rgba(45, 55, 47, .045); }
 .empty-orbit span { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #94b39a; }
 .empty-orbit span:nth-child(1) { top: 7px; right: 9px; }
@@ -484,6 +485,7 @@ button { color: inherit; }
   .file-action, .export-menu-trigger { width: 28px; height: 28px; gap: 1px; padding: 0; }
   .empty-state { top: 48%; }
   .empty-state { width: min(440px, calc(100vw - 32px)); }
+  .empty-state.guide-open { left: 50%; width: min(440px, calc(100vw - 32px)); }
   .empty-state h1 { font-size: 24px; }
   .example-grid { grid-template-columns: 1fr; gap: 8px; }
   .example-card { min-height: 94px; gap: 8px; padding: 16px; }
