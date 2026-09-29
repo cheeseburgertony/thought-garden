@@ -43,7 +43,7 @@ export async function expandThought(input: unknown) {
   const apiKey = process.env.DEEPSEEK_API_KEY?.trim();
 
   if (process.env.NEXT_PUBLIC_AI_MOCK === "true") {
-    const existing = new Set(request.children.map((text) => text.toLocaleLowerCase()));
+    const existing = new Set(request.children.map((node) => node.text.toLocaleLowerCase()));
     const candidates = mockNodes[request.action].filter((node) => !existing.has(node.text.toLocaleLowerCase()));
     const nodes = (candidates.length >= 2 ? candidates : mockNodes[request.action]).slice(0, 4);
     return ExpandResponseSchema.parse({ nodes });
@@ -64,7 +64,9 @@ export async function expandThought(input: unknown) {
         { role: "system", content: buildSystemPrompt(request.action) },
         { role: "user", content: JSON.stringify({
           current: request.current,
-          parent: request.parent,
+          roots: request.roots,
+          ancestors: request.ancestors,
+          parents: request.parents,
           siblings: request.siblings,
           children: request.children,
         }) },

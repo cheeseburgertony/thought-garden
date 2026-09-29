@@ -59,7 +59,7 @@ import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { Toaster, toast } from "sonner";
 import { alignThoughtNode, arrangeThoughtNodes, fanOutPositions } from "@/lib/canvas-layout";
-import { getDescendantIds, getHiddenNodeIds } from "@/lib/canvas-graph";
+import { getDescendantIds, getHiddenNodeIds, getThoughtExpansionContext } from "@/lib/canvas-graph";
 import { downloadCanvas, downloadWorkspace, loadWorkspace, normalizeImportedFile, saveWorkspace } from "@/lib/persistence";
 import { ExpandResponseSchema } from "@/lib/schemas";
 import { actionLabels, type ActionCardNode, type CanvasAction, type CanvasBoard, type CanvasFlowNode, type CanvasSummary, type ThoughtAction, type ThoughtNode } from "@/lib/types";
@@ -369,31 +369,20 @@ function CanvasWorkspace() {
     const state = useCanvasStore.getState();
     const current = state.nodes.find((node) => node.id === id);
     if (!current) return;
-    const parent = current.data.parentId
-      ? state.nodes.find((node) => node.id === current.data.parentId)
-      : undefined;
-    const siblings = state.nodes.filter((node) =>
-      node.id !== id && node.data.parentId === current.data.parentId,
-    ).slice(0, 80).map((node) => node.data.text);
-    const children = state.nodes.filter((node) => node.data.parentId === id).slice(0, 80).map((node) => node.data.text);
+    const context = getThoughtExpansionContext(id, state.nodes, state.edges);
+    if (!context) return;
     setRunning(id);
 
     try {
       const response = await fetch("/api/ai/expand", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action,
-          current: { id, text: current.data.text },
-          parent: parent ? { id: parent.id, text: parent.data.text } : null,
-          siblings,
-          children,
-        }),
+        body: JSON.stringify({ action, ...context }),
       });
       if (!response.ok) throw new Error("AI request failed");
       const result = ExpandResponseSchema.parse(await response.json());
       const currentState = useCanvasStore.getState();
-      const existing = new Set(children.map((text) => text.trim().toLocaleLowerCase()));
+      const existing = new Set(context.children.map((node) => node.text.trim().toLocaleLowerCase()));
       const fresh = result.nodes.filter((node) => !existing.has(node.text.trim().toLocaleLowerCase()));
       if (!fresh.length) {
         toast.message("这些方向已经长出来了，换个动作继续探索。", { icon: <Leaf size={15} /> });

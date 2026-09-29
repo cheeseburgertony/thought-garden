@@ -179,12 +179,25 @@ export const CanvasExportFileSchema = z.object({
 export const CanvasFileSchema = z.union([LegacyCanvasFileSchema, CanvasExportFileSchema]);
 export const ImportFileSchema = z.union([WorkspaceSchema, LegacyCanvasFileSchema, CanvasExportFileSchema]);
 
+const ThoughtContextNodeSchema = z.object({
+  id: z.string().min(1),
+  text: z.string().min(1).max(1600),
+  kind: z.enum(thoughtKinds),
+  createdBy: z.enum(["user", "ai"]),
+  verification: z.object({
+    status: VerificationStatusSchema,
+    note: z.string().max(500),
+  }).optional(),
+});
+
 export const ExpandRequestSchema = z.object({
   action: z.enum(["expand", "deep", "challenge", "risk", "perspective"]),
-  current: z.object({ id: z.string(), text: z.string().min(1).max(1600) }),
-  parent: z.object({ id: z.string(), text: z.string() }).nullable(),
-  siblings: z.array(z.string().max(1600)).max(80),
-  children: z.array(z.string().max(1600)).max(80),
+  current: ThoughtContextNodeSchema,
+  roots: z.array(ThoughtContextNodeSchema).max(4),
+  ancestors: z.array(ThoughtContextNodeSchema).max(12),
+  parents: z.array(ThoughtContextNodeSchema).max(8),
+  siblings: z.array(ThoughtContextNodeSchema).max(40),
+  children: z.array(ThoughtContextNodeSchema).max(80),
 });
 
 export const ExpandResponseSchema = z.object({

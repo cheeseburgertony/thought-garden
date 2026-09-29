@@ -48,7 +48,7 @@ Canvas → Selected Thought → Local Context → /api/ai/expand
        → Validated Structured Nodes → Fan-out Layout → Canvas
 ```
 
-The client sends only the selected thought, its parent, siblings, and direct children. The server validates both the request and the model's JSON response. The app stores thoughts, edges, theme, and viewport in localStorage. There is no account or cloud sync in this MVP.
+The client sends the selected thought, its connected roots and ancestors, direct parents, siblings, children, and user-recorded verification notes. The server validates both the request and the model's JSON response. The app stores thoughts, edges, theme, and viewport in localStorage. There is no account or cloud sync in this MVP.
 
 ## Checks
 

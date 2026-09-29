@@ -27,6 +27,20 @@ export type ThoughtNodeData = {
 export type ThoughtNode = Node<ThoughtNodeData, "thought">;
 export type CanvasEdge = Edge;
 
+export type ThoughtContextNode = Pick<ThoughtNodeData, "text" | "kind" | "createdBy"> & {
+  id: string;
+  verification?: Pick<ThoughtVerification, "status" | "note">;
+};
+
+export type ThoughtExpansionContext = {
+  current: ThoughtContextNode;
+  roots: ThoughtContextNode[];
+  ancestors: ThoughtContextNode[];
+  parents: ThoughtContextNode[];
+  siblings: ThoughtContextNode[];
+  children: ThoughtContextNode[];
+};
+
 export type SummaryScope = {
   type: "all" | "selected";
   nodeIds: string[];
