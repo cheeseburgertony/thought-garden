@@ -128,6 +128,8 @@ function CanvasWorkspace() {
   const [actionMeasurements, setActionMeasurements] = useState<Record<string, { width: number; height: number }>>({});
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
   const [guideOpen, setGuideOpen] = useState(false);
+  const guideToggleRef = useRef<HTMLButtonElement>(null);
+  const guideCloseRef = useRef<HTMLButtonElement>(null);
   const [canvasMenuOpen, setCanvasMenuOpen] = useState(false);
   const [canvasSearch, setCanvasSearch] = useState("");
   const [renamingCanvasId, setRenamingCanvasId] = useState<string | null>(null);
@@ -956,39 +958,57 @@ function CanvasWorkspace() {
         </ReactFlow>
 
         <aside className={`guide-sidebar${guideOpen ? " is-open" : ""} nopan nodrag`} aria-label="使用指南">
-          {guideOpen ? (
-            <section className="guide-panel" id="thought-guide-panel" aria-labelledby="thought-guide-title">
-              <header className="guide-panel-header">
-                <div className="guide-panel-heading">
-                  <span className="guide-panel-mark"><Leaf size={15} /></span>
-                  <div><strong id="thought-guide-title">使用指南</strong><span>把模糊念头逐步说清楚</span></div>
-                </div>
-                <button type="button" className="guide-toggle is-close" onClick={() => setGuideOpen(false)} aria-label="收起使用指南" aria-expanded={true} title="收起使用指南">
-                  <ChevronLeft size={17} />
-                </button>
-              </header>
-              <div className="guide-intro">
-                <strong>1. 写下还说不清的问题或观点</strong>
-                <p>不用先想完整，先把现在最模糊的一点放进画布。</p>
-                <strong>2. 选中节点，用上方操作继续追问</strong>
-                <p>「深挖」补细节，「展开」找方向；「反驳」和「风险」帮你检查盲点。</p>
-                <strong>3. 收束成阶段性判断</strong>
-                <p>用「思路整理」归纳结论、待确认的问题和下一步。</p>
+          <button
+            ref={guideToggleRef}
+            type="button"
+            className="guide-toggle is-open"
+            onClick={() => { setGuideOpen(true); requestAnimationFrame(() => guideCloseRef.current?.focus()); }}
+            aria-label="展开使用指南"
+            aria-expanded={guideOpen}
+            aria-controls="thought-guide-panel"
+            aria-hidden={guideOpen}
+            tabIndex={guideOpen ? -1 : 0}
+            title="使用指南"
+          >
+            <ChevronRight size={18} />
+          </button>
+          <section className="guide-panel" id="thought-guide-panel" aria-labelledby="thought-guide-title" aria-hidden={!guideOpen}>
+            <header className="guide-panel-header">
+              <div className="guide-panel-heading">
+                <span className="guide-panel-mark"><Leaf size={15} /></span>
+                <div><strong id="thought-guide-title">使用指南</strong><span>把模糊念头逐步说清楚</span></div>
               </div>
-              <div className="guide-list">
-                {thoughtGuides.map(({ action, icon: Icon, description }) => (
-                  <article className="guide-item" key={action}>
-                    <div className="guide-label"><Icon size={14} /><strong>{actionLabels[action]}</strong></div>
-                    <p>{description}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ) : (
-            <button type="button" className="guide-toggle is-open" onClick={() => setGuideOpen(true)} aria-label="展开使用指南" aria-expanded={false} title="使用指南">
-              <ChevronRight size={18} />
-            </button>
-          )}
+              <button
+                ref={guideCloseRef}
+                type="button"
+                className="guide-toggle is-close"
+                onClick={() => { setGuideOpen(false); requestAnimationFrame(() => guideToggleRef.current?.focus()); }}
+                aria-label="收起使用指南"
+                aria-expanded={guideOpen}
+                aria-controls="thought-guide-panel"
+                tabIndex={guideOpen ? 0 : -1}
+                title="收起使用指南"
+              >
+                <ChevronLeft size={17} />
+              </button>
+            </header>
+            <div className="guide-intro">
+              <strong>1. 写下还说不清的问题或观点</strong>
+              <p>不用先想完整，先把现在最模糊的一点放进画布。</p>
+              <strong>2. 选中节点，用上方操作继续追问</strong>
+              <p>「深挖」补细节，「展开」找方向；「反驳」和「风险」帮你检查盲点。</p>
+              <strong>3. 收束成阶段性判断</strong>
+              <p>用「思路整理」归纳结论、待确认的问题和下一步。</p>
+            </div>
+            <div className="guide-list">
+              {thoughtGuides.map(({ action, icon: Icon, description }) => (
+                <article className="guide-item" key={action}>
+                  <div className="guide-label"><Icon size={14} /><strong>{actionLabels[action]}</strong></div>
+                  <p>{description}</p>
+                </article>
+              ))}
+            </div>
+          </section>
         </aside>
 
         {alignmentGuides.vertical && <div className="alignment-guide is-vertical" style={alignmentGuides.vertical} />}
