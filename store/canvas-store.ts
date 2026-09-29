@@ -42,6 +42,7 @@ type CanvasState = CanvasSnapshot & {
   checkpoint: () => void;
   addThought: (node: ThoughtNode, edge?: CanvasEdge) => void;
   addThoughts: (nodes: ThoughtNode[], edges: CanvasEdge[]) => void;
+  rememberAiSuggestions: (id: string, suggestions: string[]) => void;
   updateThought: (id: string, text: string) => void;
   removeThoughts: (ids: string[]) => void;
   removeSelection: () => void;
@@ -320,6 +321,22 @@ export const useCanvasStore = create<CanvasState>((set, get) => {
       if (!nodes.length) return;
       checkpoint();
       setSnapshot((snapshot) => ({ ...snapshot, nodes: [...snapshot.nodes, ...nodes], edges: [...snapshot.edges, ...edges] }));
+    },
+    rememberAiSuggestions: (id, suggestions) => {
+      const node = get().nodes.find((item) => item.id === id);
+      if (!node || !suggestions.length) return;
+      const recentAiSuggestions = [...new Set([
+        ...(node.data.recentAiSuggestions ?? []),
+        ...suggestions.map((text) => text.trim()).filter(Boolean),
+      ])].slice(-12);
+      if (recentAiSuggestions.length === (node.data.recentAiSuggestions?.length ?? 0)
+        && recentAiSuggestions.every((text, index) => text === node.data.recentAiSuggestions?.[index])) return;
+      setSnapshot((snapshot) => ({
+        ...snapshot,
+        nodes: snapshot.nodes.map((item) => item.id === id
+          ? { ...item, data: { ...item.data, recentAiSuggestions } }
+          : item),
+      }));
     },
     updateThought: (id, text) => {
       checkpoint();

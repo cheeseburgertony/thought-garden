@@ -19,6 +19,7 @@ export type ThoughtNodeData = {
   parentId?: string;
   createdBy: "user" | "ai";
   collapsed?: boolean;
+  recentAiSuggestions?: string[];
   verification?: ThoughtVerification;
   busy?: boolean;
   onAction?: (id: string, action: ThoughtAction) => void;

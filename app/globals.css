@@ -328,6 +328,28 @@ button { color: inherit; }
 .command-footer kbd { margin-right: 4px; }
 .summary-dialog-backdrop { align-items: center; padding: 16px; }
 .summary-dialog { display: flex; width: min(670px, calc(100vw - 32px)); max-height: min(850px, calc(100dvh - 32px)); flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 19px; background: var(--surface-solid); box-shadow: var(--dialog-shadow); animation: dialog-arrive .14s ease-out both; }
+.candidate-dialog { width: min(610px, calc(100vw - 32px)); }
+.candidate-dialog .summary-dialog-header p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.candidate-dialog-content { display: grid; min-height: 0; flex: 1 1 auto; gap: 12px; overflow: auto; overscroll-behavior: contain; padding: 18px 22px 20px; }
+.candidate-dialog-intro { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 11px; }
+.candidate-dialog-intro button { padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-solid); color: var(--accent-deep); cursor: pointer; font: inherit; font-size: 10px; }
+.candidate-dialog-intro button:hover:not(:disabled) { background: var(--accent-wash); }
+.candidate-dialog-intro button:disabled { cursor: not-allowed; opacity: .5; }
+.candidate-list { display: grid; max-height: min(52dvh, 480px); gap: 8px; overflow: auto; padding: 1px 2px 2px 1px; }
+.candidate-item { display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 11px; background: var(--canvas); transition: border-color .14s ease, background .14s ease; }
+.candidate-item.is-selected { border-color: color-mix(in srgb, var(--accent) 35%, var(--line)); background: color-mix(in srgb, var(--accent-wash) 42%, var(--surface-solid)); }
+.candidate-check { display: grid; width: 24px; height: 24px; margin-top: 1px; place-items: center; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface-solid); color: white; cursor: pointer; }
+.candidate-item.is-selected .candidate-check { border-color: var(--accent); background: var(--accent); }
+.candidate-check:disabled { cursor: not-allowed; opacity: .55; }
+.candidate-item-main { display: grid; min-width: 0; gap: 6px; }
+.candidate-item-meta { display: flex; align-items: center; gap: 7px; color: var(--subtle); font-size: 9px; }
+.candidate-item-meta span:last-child { padding: 2px 6px; border-radius: 999px; background: var(--surface-solid); color: var(--muted); }
+.candidate-item-main textarea { width: 100%; min-height: 41px; padding: 3px 0; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 12px; line-height: 1.6; }
+.candidate-item-main textarea:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 38%, transparent); outline-offset: 2px; border-radius: 3px; }
+.candidate-item-main textarea:disabled { opacity: .65; }
+.candidate-dialog-footer { min-height: 68px; }
+.candidate-selection-count { color: var(--muted); font-size: 10px; white-space: nowrap; }
+.candidate-dialog .summary-dialog-actions button:focus-visible, .candidate-dialog-intro button:focus-visible, .candidate-check:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .summary-dialog-scroll { min-height: 0; flex: 1 1 auto; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; -ms-overflow-style: none; }
 .summary-dialog-scroll::-webkit-scrollbar { display: none; }
 .summary-dialog-header { z-index: 1; display: flex; flex: none; align-items: center; gap: 13px; padding: 18px 22px; border-bottom: 1px solid var(--line); background: linear-gradient(112deg, var(--accent-wash), var(--surface-solid) 76%); }
@@ -504,6 +526,9 @@ button { color: inherit; }
   .canvas-tool { height: 33px; gap: 5px; padding: 0 7px; font-size: 9px; }
   .summary-dialog-backdrop { padding: 10px; }
   .summary-dialog { width: 100%; max-height: calc(100dvh - 20px); border-radius: 16px; }
+  .candidate-dialog-content { gap: 10px; padding: 14px 16px 16px; }
+  .candidate-list { max-height: min(58dvh, 430px); }
+  .candidate-item { gap: 8px; padding: 9px; }
   .summary-dialog-header { gap: 11px; padding: 15px 16px; }
   .summary-dialog-mark { width: 36px; height: 36px; border-radius: 11px; }
   .summary-scope-content, .summary-result-content { gap: 14px; padding: 16px; }

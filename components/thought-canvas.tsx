@@ -59,12 +59,13 @@ import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { Toaster, toast } from "sonner";
 import { alignThoughtNode, arrangeThoughtNodes, fanOutPositions } from "@/lib/canvas-layout";
-import { getDescendantIds, getHiddenNodeIds, getThoughtExpansionContext } from "@/lib/canvas-graph";
+import { getDescendantIds, getHiddenNodeIds } from "@/lib/canvas-graph";
 import { downloadCanvas, downloadWorkspace, loadWorkspace, normalizeImportedFile, saveWorkspace } from "@/lib/persistence";
-import { ExpandResponseSchema } from "@/lib/schemas";
 import { actionLabels, type ActionCardNode, type CanvasAction, type CanvasBoard, type CanvasFlowNode, type CanvasSummary, type ThoughtAction, type ThoughtNode } from "@/lib/types";
 import ActionCardView from "@/components/action-card";
 import CanvasSummaryDialog from "@/components/canvas-summary-dialog";
+import ThoughtCandidateDialog from "@/components/thought-candidate-dialog";
+import { useThoughtCandidateFlow } from "@/components/thought-candidate-flow";
 import ThoughtNodeView from "@/components/thought-node";
 import { useCanvasStore } from "@/store/canvas-store";
 
@@ -124,7 +125,16 @@ function CanvasWorkspace() {
   const [isSummaryOpen, setSummaryOpen] = useState(false);
   const [summaryInitialId, setSummaryInitialId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [running, setRunning] = useState<string | null>(null);
+  const {
+    running,
+    candidateReview,
+    candidateError,
+    runAction,
+    regenerateCandidates,
+    addCandidatesToCanvas,
+    closeCandidateReview,
+    clearRunning,
+  } = useThoughtCandidateFlow();
   const [actionMeasurements, setActionMeasurements] = useState<Record<string, { width: number; height: number }>>({});
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
   const [guideOpen, setGuideOpen] = useState(false);
@@ -364,59 +374,6 @@ function CanvasWorkspace() {
     });
   }, [viewportCenter]);
 
-  const runAction = useCallback(async (id: string, action: ThoughtAction) => {
-    if (running) return;
-    const state = useCanvasStore.getState();
-    const current = state.nodes.find((node) => node.id === id);
-    if (!current) return;
-    const context = getThoughtExpansionContext(id, state.nodes, state.edges);
-    if (!context) return;
-    setRunning(id);
-
-    try {
-      const response = await fetch("/api/ai/expand", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, ...context }),
-      });
-      if (!response.ok) throw new Error("AI request failed");
-      const result = ExpandResponseSchema.parse(await response.json());
-      const currentState = useCanvasStore.getState();
-      const existing = new Set(context.children.map((node) => node.text.trim().toLocaleLowerCase()));
-      const fresh = result.nodes.filter((node) => !existing.has(node.text.trim().toLocaleLowerCase()));
-      if (!fresh.length) {
-        toast.message("这些方向已经长出来了，换个动作继续探索。", { icon: <Leaf size={15} /> });
-        return;
-      }
-      const direction = current.sourcePosition === Position.Right ? "LR" : "TB";
-      const points = fanOutPositions(current, fresh.length, currentState.nodes, direction);
-      const nextNodes: ThoughtNode[] = fresh.map((item, index) => ({
-        id: nanoid(),
-        type: "thought",
-        position: points[index],
-        sourcePosition: direction === "LR" ? Position.Right : Position.Bottom,
-        targetPosition: direction === "LR" ? Position.Left : Position.Top,
-        data: {
-          text: item.text,
-          kind: action === "challenge" ? "challenge" : action === "risk" ? "risk" : item.kind,
-          depth: current.data.depth + 1,
-          parentId: id,
-          createdBy: "ai",
-          verification: { status: "unverified", note: "", updatedAt: new Date().toISOString() },
-        },
-      }));
-      const nextEdges = nextNodes.map((node) => ({
-        id: nanoid(), source: id, target: node.id, type: "default" as const,
-      }));
-      useCanvasStore.getState().addThoughts(nextNodes, nextEdges);
-    } catch (error) {
-      console.error("[thought-garden] Could not grow thought", error);
-      toast.error("这次没有长出来，再试一次。");
-    } finally {
-      setRunning(null);
-    }
-  }, [running]);
-
   const hiddenNodeIds = useMemo(() => getHiddenNodeIds(nodes, edges), [nodes, edges]);
   const thoughtFlowNodes = useMemo(() => nodes.map((node) => ({
     ...node,
@@ -618,10 +575,10 @@ function CanvasWorkspace() {
     setSummaryInitialId(null);
     setCommandOpen(false);
     setSearchOpen(false);
-    setRunning(null);
+    clearRunning();
     setAlignmentGuides({});
     initialSingleNodeViewApplied.current = false;
-  }, []);
+  }, [clearRunning]);
 
   const importFile = useCallback(async (file?: File) => {
     if (!file) return;
@@ -807,7 +764,7 @@ function CanvasWorkspace() {
       );
       const mod = event.metaKey || event.ctrlKey;
       const interactive = target instanceof HTMLElement && target.closest("button, a, [role=button]");
-      if (isSummaryOpen) return;
+      if (isSummaryOpen || candidateReview) return;
       if (canvasMenuOpen && event.key === "Escape") { setCanvasMenuOpen(false); return; }
       if (event.code === "Space" && !event.repeat && !typing && !interactive && !isCommandOpen && !isSearchOpen && !mod && !event.altKey) {
         event.preventDefault();
@@ -856,7 +813,7 @@ function CanvasWorkspace() {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [canvasMenuOpen, isCommandOpen, isSearchOpen, isSummaryOpen, openDraftAtCenter, redo, undo]);
+  }, [candidateReview, canvasMenuOpen, isCommandOpen, isSearchOpen, isSummaryOpen, openDraftAtCenter, redo, undo]);
 
   if (!hydrated) return <main className="app-loading" aria-label="正在打开思维花园"><span className="brand-mark"><Leaf size={19} /></span></main>;
 
@@ -1207,6 +1164,20 @@ function CanvasWorkspace() {
           onSave={saveSummary}
           onAddAction={addActionFromSummary}
           onFocusNode={focusSummarySource}
+        />
+      )}
+
+      {candidateReview && (
+        <ThoughtCandidateDialog
+          key={candidateReview.generationId}
+          action={candidateReview.action}
+          parentText={candidateReview.parentText}
+          candidates={candidateReview.candidates}
+          busy={running === candidateReview.parentId}
+          error={candidateError}
+          onClose={closeCandidateReview}
+          onRegenerate={regenerateCandidates}
+          onConfirm={addCandidatesToCanvas}
         />
       )}
 

@@ -30,6 +30,7 @@ export const ThoughtNodeSchema = z.object({
     parentId: z.string().optional(),
     createdBy: z.enum(["user", "ai"]),
     collapsed: z.boolean().optional(),
+    recentAiSuggestions: z.array(z.string().trim().min(1).max(1600)).max(12).optional(),
     verification: ThoughtVerificationSchema.optional(),
   }),
 });
@@ -192,6 +193,7 @@ const ThoughtContextNodeSchema = z.object({
 
 export const ExpandRequestSchema = z.object({
   action: z.enum(["expand", "deep", "challenge", "risk", "perspective"]),
+  previousCandidates: z.array(z.string().trim().min(1).max(1600)).max(12).default([]),
   current: ThoughtContextNodeSchema,
   roots: z.array(ThoughtContextNodeSchema).max(4),
   ancestors: z.array(ThoughtContextNodeSchema).max(12),
@@ -204,7 +206,7 @@ export const ExpandResponseSchema = z.object({
   nodes: z.array(z.object({
     text: z.string().trim().min(1).max(30),
     kind: z.enum(thoughtKinds),
-  })).min(3).max(6),
+  })).max(6),
 });
 
 export const SummarizeRequestSchema = z.object({
