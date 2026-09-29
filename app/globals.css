@@ -141,7 +141,8 @@ button { color: inherit; }
 .thought-node .react-flow__handle:hover { background: var(--accent-deep); box-shadow: 0 0 0 4px var(--accent-wash); }
 
 .react-flow__node-action { width: 310px; overflow: visible; border: 0; background: transparent; }
-.action-card { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface-solid); box-shadow: 0 8px 24px rgba(38, 45, 39, .09); color: var(--text); }
+.action-card { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 15px; background: var(--surface-solid); box-shadow: 0 8px 24px rgba(38, 45, 39, .09); color: var(--text); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.react-flow__node-action:not(.dragging) .action-card:hover, .react-flow__node-action:not(.dragging) .action-card:focus-within { transform: translateY(-2px); border-color: color-mix(in srgb, var(--accent) 38%, var(--line)); box-shadow: 0 13px 30px rgba(38, 45, 39, .14), 0 2px 7px rgba(38, 45, 39, .05); }
 .react-flow__node-action.dragging .action-card { box-shadow: 0 16px 34px rgba(38, 45, 39, .16); }
 .action-card-header { display: flex; align-items: center; gap: 9px; }
 .action-card-mark { display: grid; width: 32px; height: 32px; flex: none; place-items: center; border-radius: 10px; background: color-mix(in srgb, #7e8daa 13%, var(--surface-solid)); color: #71809e; }
