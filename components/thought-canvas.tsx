@@ -948,9 +948,11 @@ function CanvasWorkspace() {
         >
           <CanvasBackground />
           <Controls showInteractive={false} position="bottom-right" />
-          <div className="canvas-hint">
-            {spacePanActive ? <>临时抓手 <span className="hint-dot">·</span> 拖动画布平移 <span className="hint-dot">·</span> 松开空格恢复工具</> : toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白框选 <span className="hint-dot">·</span> <kbd>Shift</kbd> 多选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
-          </div>
+          {nodes.length > 0 && (
+            <div className="canvas-hint">
+              {spacePanActive ? <>临时抓手 <span className="hint-dot">·</span> 拖动画布平移 <span className="hint-dot">·</span> 松开空格恢复工具</> : toolMode === "select" ? <>拖节点移动 <span className="hint-dot">·</span> 拖空白框选 <span className="hint-dot">·</span> <kbd>Shift</kbd> 多选 <span className="hint-dot">·</span> 拖连接点连线 <span className="hint-dot">·</span> <kbd>空格</kbd> 临时抓手</> : toolMode === "hand" ? <>拖动画布平移 <span className="hint-dot">·</span> 双指平移 <span className="hint-dot">·</span> 捏合缩放 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</> : <>拖动连接点连线 <span className="hint-dot">·</span> <kbd>V</kbd> 返回操作</>}
+            </div>
+          )}
         </ReactFlow>
 
         <aside className={`guide-sidebar${guideOpen ? " is-open" : ""} nopan nodrag`} aria-label="使用指南">
@@ -992,60 +994,63 @@ function CanvasWorkspace() {
         {alignmentGuides.vertical && <div className="alignment-guide is-vertical" style={alignmentGuides.vertical} />}
         {alignmentGuides.horizontal && <div className="alignment-guide is-horizontal" style={alignmentGuides.horizontal} />}
 
-        <div className="canvas-toolbar" role="toolbar" aria-label="画布工具">
-          {canvasTools.map(({ mode, label, icon: Icon }) => (
-            <button
-              key={mode}
-              type="button"
-              className={`canvas-tool${activeToolMode === mode ? " is-active" : ""}`}
-              aria-label={`${label}工具`}
-              aria-pressed={activeToolMode === mode}
-              title={`${label}工具`}
-              onClick={() => { setToolMode(mode); setAlignmentGuides({}); }}
-            >
-              <Icon size={16} strokeWidth={1.8} />
-              <span>{label}</span>
-            </button>
-          ))}
-          <span className="toolbar-divider" />
-          <button
-            type="button"
-            className="canvas-tool"
-            aria-label="一键整理画布"
-            title="一键整理节点并适应画布"
-            disabled={!nodes.length}
-            onClick={organizeCanvas}
-          >
-            <Workflow size={16} strokeWidth={1.8} />
-            <span>整理</span>
-          </button>
-          <button
-            type="button"
-            className={`canvas-tool${summary ? " has-summary" : ""}`}
-            aria-label={summary ? "查看思路整理结果" : "整理思路"}
-            title={summary ? "查看思路整理结果" : "从想法中提炼结论和下一步"}
-            disabled={!nodes.length && !summary}
-            onClick={() => { setSummaryInitialId(null); setSummaryOpen(true); }}
-          >
-            <ListChecks size={16} strokeWidth={1.8} />
-            <span>{summary ? "查看总结" : "思路整理"}</span>
-          </button>
-          {selectedNodeCount > 0 && (
-            <>
+        {(nodes.length > 0 || summary) && (
+          <div className="canvas-toolbar" role="toolbar" aria-label="画布工具">
+            {nodes.length > 0 && <>
+              {canvasTools.map(({ mode, label, icon: Icon }) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`canvas-tool${activeToolMode === mode ? " is-active" : ""}`}
+                  aria-label={`${label}工具`}
+                  aria-pressed={activeToolMode === mode}
+                  title={`${label}工具`}
+                  onClick={() => { setToolMode(mode); setAlignmentGuides({}); }}
+                >
+                  <Icon size={16} strokeWidth={1.8} />
+                  <span>{label}</span>
+                </button>
+              ))}
               <span className="toolbar-divider" />
               <button
                 type="button"
-                className="canvas-tool is-danger"
-                aria-label={`删除 ${selectedNodeCount} 个选中节点`}
-                title={`删除 ${selectedNodeCount} 个选中节点 · Delete`}
-                onClick={() => useCanvasStore.getState().removeSelection()}
+                className="canvas-tool"
+                aria-label="一键整理画布"
+                title="一键整理节点并适应画布"
+                onClick={organizeCanvas}
               >
-                <Trash2 size={15} strokeWidth={1.8} />
-                <span>删除 {selectedNodeCount}</span>
+                <Workflow size={16} strokeWidth={1.8} />
+                <span>整理</span>
               </button>
-            </>
-          )}
-        </div>
+              <span className="toolbar-divider" />
+            </>}
+            <button
+              type="button"
+              className={`canvas-tool${summary ? " has-summary" : ""}`}
+              aria-label={summary ? "查看思路整理结果" : "整理思路"}
+              title={summary ? "查看思路整理结果" : "从想法中提炼结论和下一步"}
+              onClick={() => { setSummaryInitialId(null); setSummaryOpen(true); }}
+            >
+              <ListChecks size={16} strokeWidth={1.8} />
+              <span>{summary ? "查看总结" : "思路整理"}</span>
+            </button>
+            {selectedNodeCount > 0 && (
+              <>
+                <span className="toolbar-divider" />
+                <button
+                  type="button"
+                  className="canvas-tool is-danger"
+                  aria-label={`删除 ${selectedNodeCount} 个选中节点`}
+                  title={`删除 ${selectedNodeCount} 个选中节点 · Delete`}
+                  onClick={() => useCanvasStore.getState().removeSelection()}
+                >
+                  <Trash2 size={15} strokeWidth={1.8} />
+                  <span>删除 {selectedNodeCount}</span>
+                </button>
+              </>
+            )}
+          </div>
+        )}
 
         {nodes.length === 0 && !draft && (
           <section className={`empty-state${guideOpen ? " guide-open" : ""}`}>
